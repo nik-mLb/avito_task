@@ -1,0 +1,38 @@
+services:
+  pvz-app:
+    build: .
+    container_name: pvz_app
+    ports:
+      - "8080:8080" 
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - pvz-network
+    command: sh -c "./migrate && ./main"
+
+  db:
+    image: postgres:latest
+    container_name: pvz_db
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: pvz_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - pvz_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d pvz_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - pvz-network
+
+networks:
+  pvz-network:
+    driver: bridge
+
+volumes:
+  pvz_data:
