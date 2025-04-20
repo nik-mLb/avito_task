@@ -10,6 +10,7 @@ import (
 	pickup "github.com/nik-mLb/avito_task/internal/models/pickup_point"
 	product "github.com/nik-mLb/avito_task/internal/models/product"
 	reception "github.com/nik-mLb/avito_task/internal/models/reception"
+	"github.com/nik-mLb/avito_task/internal/transport/dto"
 )
 
 const (
@@ -32,16 +33,6 @@ const (
 		LIMIT $3 OFFSET $4`
 )
 
-type PickupPointWithReceptions struct {
-	PickupPoint pickup.PickupPoint
-	Receptions  []ReceptionWithProducts
-}
-
-type ReceptionWithProducts struct {
-	Reception reception.Reception
-	Products  []product.Product
-}
-
 type PickupPointRepository struct {
 	db *sql.DB
 }
@@ -63,7 +54,7 @@ func (r *PickupPointRepository) CreatePickupPoint(ctx context.Context, city stri
 	return pickupPoint, err
 }
 
-func (r *PickupPointRepository) GetPickupPointsWithReceptions(ctx context.Context, startDate, endDate *time.Time, page, limit int) ([]PickupPointWithReceptions, error) {
+func (r *PickupPointRepository) GetPickupPointsWithReceptions(ctx context.Context, startDate, endDate *time.Time, page, limit int) ([]dto.PickupPointListResponse, error) {
 	offset := (page - 1) * limit
 
 	rows, err := r.db.QueryContext(ctx, GetPickupPointsWithReceptionsQuery, startDate, endDate, limit, offset)
@@ -72,7 +63,7 @@ func (r *PickupPointRepository) GetPickupPointsWithReceptions(ctx context.Contex
 	}
 	defer rows.Close()
 
-	results := make(map[uuid.UUID]*PickupPointWithReceptions)
+	results := make(map[uuid.UUID]*dto.PickupPointListResponse)
 
 	for rows.Next() {
 		var (
@@ -94,9 +85,9 @@ func (r *PickupPointRepository) GetPickupPointsWithReceptions(ctx context.Contex
 
 		// Если это новый ПВЗ, добавляем его в результаты
 		if _, exists := results[pp.ID]; !exists {
-			results[pp.ID] = &PickupPointWithReceptions{
+			results[pp.ID] = &dto.PickupPointListResponse{
 				PickupPoint: pp,
-				Receptions:  []ReceptionWithProducts{},
+				Receptions:  []dto.ReceptionWithProducts{},
 			}
 		}
 
@@ -106,7 +97,7 @@ func (r *PickupPointRepository) GetPickupPointsWithReceptions(ctx context.Contex
 			rec.PickupPointID = pp.ID
 
 			// Ищем приемку в списке
-			var foundRec *ReceptionWithProducts
+			var foundRec *dto.ReceptionWithProducts
 			for i := range results[pp.ID].Receptions {
 				if results[pp.ID].Receptions[i].Reception.ID == rec.ID {
 					foundRec = &results[pp.ID].Receptions[i]
@@ -116,7 +107,7 @@ func (r *PickupPointRepository) GetPickupPointsWithReceptions(ctx context.Contex
 
 			// Если приемка новая, добавляем ее
 			if foundRec == nil {
-				results[pp.ID].Receptions = append(results[pp.ID].Receptions, ReceptionWithProducts{
+				results[pp.ID].Receptions = append(results[pp.ID].Receptions, dto.ReceptionWithProducts{
 					Reception: rec,
 					Products:  []product.Product{},
 				})
@@ -137,7 +128,7 @@ func (r *PickupPointRepository) GetPickupPointsWithReceptions(ctx context.Contex
 	}
 
 	// Преобразуем map в slice
-	output := make([]PickupPointWithReceptions, 0, len(results))
+	output := make([]dto.PickupPointListResponse, 0, len(results))
 	for _, v := range results {
 		output = append(output, *v)
 	}

@@ -6,8 +6,10 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
+	errs "github.com/nik-mLb/avito_task/internal/models/errs"
 	models "github.com/nik-mLb/avito_task/internal/models/reception"
-	repository "github.com/nik-mLb/avito_task/internal/repository/reception"
+	response "github.com/nik-mLb/avito_task/internal/transport/utils"
+	"github.com/nik-mLb/avito_task/internal/transport/dto"
 )
 
 type ReceptionUsecase interface {
@@ -23,31 +25,25 @@ func NewReceptionHandler(uc ReceptionUsecase) *ReceptionHandler {
 	return &ReceptionHandler{uc: uc}
 }
 
-type createReceptionRequest struct {
-	PvzID string `json:"pvzId"`
-}
-
 func (h *ReceptionHandler) CreateReception(w http.ResponseWriter, r *http.Request) {
-	var req createReceptionRequest
+	var req dto.ReceptionRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		response.SendError(r.Context(), w, http.StatusBadRequest, "Invalid request")
 		return
 	}
 
-	reception, err := h.uc.CreateReception(r.Context(), req.PvzID)
+	reception, err := h.uc.CreateReception(r.Context(), req.PickupPointID)
 	if err != nil {
 		switch err {
-		case repository.ErrActiveReceptionExists:
-			http.Error(w, "Active reception already exists", http.StatusBadRequest)
+		case errs.ErrActiveReceptionExists:
+			response.SendError(r.Context(), w, http.StatusBadRequest, "Active reception already exists")
 		default:
-			http.Error(w, "Failed to create reception", http.StatusInternalServerError)
+			response.SendError(r.Context(), w, http.StatusInternalServerError, "Failed to create reception")
 		}
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(reception)
+	response.SendJSONResponse(r.Context(), w, http.StatusCreated, reception)
 }
 
 func (h *ReceptionHandler) CloseReception(w http.ResponseWriter, r *http.Request) {
@@ -58,15 +54,13 @@ func (h *ReceptionHandler) CloseReception(w http.ResponseWriter, r *http.Request
     reception, err := h.uc.CloseReception(r.Context(), pvzID)
     if err != nil {
         switch err {
-        case repository.ErrNoActiveReceptionToClose:
-            http.Error(w, "No active reception to close", http.StatusBadRequest)
+        case errs.ErrNoActiveReceptionToClose:
+			response.SendError(r.Context(), w, http.StatusBadRequest, "No active reception to close")
         default:
-            http.Error(w, "Failed to close reception", http.StatusInternalServerError)
+			response.SendError(r.Context(), w, http.StatusInternalServerError, "Failed to close reception")
         }
         return
     }
 
-    w.Header().Set("Content-Type", "application/json")
-    w.WriteHeader(http.StatusOK)
-    json.NewEncoder(w).Encode(reception)
+	response.SendJSONResponse(r.Context(), w, http.StatusOK, reception)
 }

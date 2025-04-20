@@ -1,6 +1,9 @@
 package middleware
 
-import "net/http"
+import (
+	"net/http"
+	response "github.com/nik-mLb/avito_task/internal/transport/utils"
+)
 
 // RoleMiddleware создает middleware для проверки роли
 func RoleMiddleware(allowedRoles ...string) func(http.Handler) http.Handler {
@@ -9,7 +12,7 @@ func RoleMiddleware(allowedRoles ...string) func(http.Handler) http.Handler {
 			// Получаем роль из контекста
 			role, ok := r.Context().Value(roleKey).(string)
 			if !ok {
-				http.Error(w, "Role not found in context", http.StatusInternalServerError)
+				response.SendError(r.Context(), w, http.StatusInternalServerError, "Role not found in context")
 				return
 			}
 
@@ -23,7 +26,7 @@ func RoleMiddleware(allowedRoles ...string) func(http.Handler) http.Handler {
 			}
 
 			if !allowed {
-				http.Error(w, "Insufficient permissions", http.StatusForbidden)
+				response.SendError(r.Context(), w, http.StatusForbidden, "Insufficient permissions")
 				return
 			}
 

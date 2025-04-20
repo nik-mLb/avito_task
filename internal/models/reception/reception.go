@@ -8,7 +8,7 @@ import (
 
 type Reception struct {
 	ID            uuid.UUID `json:"id"`
-	ReceptionDate time.Time `json:"reception_date"`
-	PickupPointID uuid.UUID `json:"pickup_point_id"`
+	ReceptionDate time.Time `json:"dateTime"`
+	PickupPointID uuid.UUID `json:"pvzId"`
 	Status        string    `json:"status"` // "in_progress" или "close"
 }

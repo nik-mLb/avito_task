@@ -7,7 +7,9 @@ import (
 
 	"github.com/gorilla/mux"
 	models "github.com/nik-mLb/avito_task/internal/models/product"
-	repository "github.com/nik-mLb/avito_task/internal/repository/product"
+	errs "github.com/nik-mLb/avito_task/internal/models/errs"
+	"github.com/nik-mLb/avito_task/internal/transport/dto"
+	response "github.com/nik-mLb/avito_task/internal/transport/utils"
 )
 
 type ProductUsecase interface {
@@ -23,32 +25,25 @@ func NewProductHandler(uc ProductUsecase) *ProductHandler {
 	return &ProductHandler{uc: uc}
 }
 
-type addProductRequest struct {
-	Type  string `json:"type"`
-	PvzID string `json:"pvzId"`
-}
-
 func (h *ProductHandler) AddProduct(w http.ResponseWriter, r *http.Request) {
-	var req addProductRequest
+	var req dto.ProductRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		response.SendError(r.Context(), w, http.StatusBadRequest, "Invalid request")
 		return
 	}
 
-	product, err := h.uc.AddProduct(r.Context(), req.PvzID, req.Type)
+	product, err := h.uc.AddProduct(r.Context(), req.PickupPointID, req.Type)
 	if err != nil {
 		switch err {
-		case repository.ErrNoActiveReception:
-			http.Error(w, "No active reception found", http.StatusBadRequest)
+		case errs.ErrNoActiveReception:
+			response.SendError(r.Context(), w, http.StatusBadRequest, "No active reception found")
 		default:
-			http.Error(w, "Failed to add product", http.StatusInternalServerError)
+			response.SendError(r.Context(), w, http.StatusInternalServerError, "Failed to add product")
 		}
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(product)
+	response.SendJSONResponse(r.Context(), w, http.StatusCreated, product)
 }
 
 func (h *ProductHandler) DeleteLastProduct(w http.ResponseWriter, r *http.Request) {
@@ -59,12 +54,10 @@ func (h *ProductHandler) DeleteLastProduct(w http.ResponseWriter, r *http.Reques
     err := h.uc.DeleteLastProduct(r.Context(), pvzID)
     if err != nil {
         switch err {
-        case repository.ErrNoActiveReception:
-            http.Error(w, "No active reception found", http.StatusBadRequest)
-        case repository.ErrNoProductsToDelete:
-            http.Error(w, "No products to delete", http.StatusBadRequest)
+        case errs.ErrNoProductsToDelete:
+			response.SendError(r.Context(), w, http.StatusBadRequest, "No active reception found or no products to delete")
         default:
-            http.Error(w, "Failed to delete product", http.StatusInternalServerError)
+			response.SendError(r.Context(), w, http.StatusInternalServerError, "Failed to delete product")
         }
         return
     }

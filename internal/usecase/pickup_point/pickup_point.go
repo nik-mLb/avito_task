@@ -2,11 +2,11 @@ package usecase
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	models "github.com/nik-mLb/avito_task/internal/models/pickup_point"
-	repository "github.com/nik-mLb/avito_task/internal/repository/pickup_point"
+	"github.com/nik-mLb/avito_task/internal/transport/dto"
+	errs "github.com/nik-mLb/avito_task/internal/models/errs"
 )
 
 var (
@@ -15,12 +15,11 @@ var (
 		"Санкт-Петербург": true,
 		"Казань":          true,
 	}
-	ErrCityNotAllowed = errors.New("city not allowed")
 )
 
 type PickupPointRepository interface {
 	CreatePickupPoint(ctx context.Context, city string) (*models.PickupPoint, error)
-	GetPickupPointsWithReceptions(ctx context.Context, startDate, endDate *time.Time, page, limit int) ([]repository.PickupPointWithReceptions, error)
+	GetPickupPointsWithReceptions(ctx context.Context, startDate, endDate *time.Time, page, limit int) ([]dto.PickupPointListResponse, error)
 }
 
 type PickupPointUsecase struct {
@@ -33,13 +32,13 @@ func NewPickupPointUsecase(repo PickupPointRepository) *PickupPointUsecase {
 
 func (uc *PickupPointUsecase) CreatePickupPoint(ctx context.Context, city string) (*models.PickupPoint, error) {
 	if !allowedCities[city] {
-		return nil, ErrCityNotAllowed
+		return nil, errs.ErrCityNotAllowed
 	}
 
 	return uc.repo.CreatePickupPoint(ctx, city)
 }
 
-func (uc *PickupPointUsecase) GetPickupPointsWithReceptions(ctx context.Context, startDate, endDate *time.Time, page, limit int) ([]repository.PickupPointWithReceptions, error) {
+func (uc *PickupPointUsecase) GetPickupPointsWithReceptions(ctx context.Context, startDate, endDate *time.Time, page, limit int) ([]dto.PickupPointListResponse, error) {
     if page < 1 {
         page = 1
     }

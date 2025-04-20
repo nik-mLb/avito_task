@@ -16,7 +16,7 @@ const (
 
 type Product struct {
 	ID            uuid.UUID   `json:"id"`
-	ReceptionDate time.Time   `json:"reception_date"`
-	ReceptionID   uuid.UUID   `json:"reception_id"`
-	ProductType   ProductType `json:"product_type"`
+	ReceptionDate time.Time   `json:"dateTime"`
+	ReceptionID   uuid.UUID   `json:"receptionId"`
+	ProductType   ProductType `json:"type"`
 }

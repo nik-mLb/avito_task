@@ -69,6 +69,9 @@ func NewApp(conf *config.Config) (*App, error) {
 
 	// Настройка маршрутизатора
 	router := mux.NewRouter()
+	router.Use(func(next http.Handler) http.Handler {
+		return middleware.LogRequest(logger, next)
+	})
 
 	router.HandleFunc("/dummyLogin", authHandler.DummyLogin).Methods("POST")
 	router.HandleFunc("/login", authHandler.Login).Methods("POST")

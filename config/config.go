@@ -59,8 +59,8 @@ func NewConfig() (*Config, error) {
 		DB:              raw.PostgresDB,
 		Port:            raw.PostgresPort,
 		Host:            raw.PostgresHost,
-		MaxOpenConns:    25,
-		MaxIdleConns:    25,
+		MaxOpenConns:    100,
+		MaxIdleConns:    10,
 		ConnMaxLifetime: 5 * time.Minute,
 	}
 

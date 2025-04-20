@@ -3,10 +3,9 @@ package repository
 import (
 	"context"
 	"database/sql"
-	"errors"
-
 	"github.com/google/uuid"
 	models "github.com/nik-mLb/avito_task/internal/models/product"
+	errs "github.com/nik-mLb/avito_task/internal/models/errs"
 )
 
 const (
@@ -37,11 +36,6 @@ const (
         RETURNING id`
 )
 
-var (
-	ErrNoActiveReception = errors.New("no active reception found")
-	ErrNoProductsToDelete = errors.New("no products to delete in active reception")
-)
-
 type ProductRepository struct {
 	db *sql.DB
 }
@@ -56,7 +50,7 @@ func (r *ProductRepository) AddProduct(ctx context.Context, pvzID uuid.UUID, pro
 	err := r.db.QueryRowContext(ctx, GetActiveReceptionQuery, pvzID).Scan(&receptionID)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, ErrNoActiveReception
+			return nil, errs.ErrNoActiveReception
 		}
 		return nil, err
 	}
@@ -82,7 +76,7 @@ func (r *ProductRepository) DeleteLastProduct(ctx context.Context, pvzID uuid.UU
     err = tx.QueryRowContext(ctx, GetLastProductQuery, pvzID).Scan(&productID)
     if err != nil {
         if err == sql.ErrNoRows {
-            return ErrNoProductsToDelete
+            return errs.ErrNoProductsToDelete
         }
         return err
     }

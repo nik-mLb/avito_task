@@ -25,10 +25,7 @@ COPY --from=builder /app/migrate .
 COPY --from=builder /app/db/migrations ./db/migrations
 COPY --from=builder /app/config.yml .
 
-# Устанавливаем зависимость для работы с PostgreSQL
-RUN apk add --no-cache postgresql-client
-
-EXPOSE 8081
+EXPOSE 8080
 
 # Запускаем миграции и приложение
 CMD sh -c "./migrate && ./main"

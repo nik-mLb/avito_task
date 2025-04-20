@@ -3,7 +3,7 @@ package repository
 import (
 	"context"
 	"database/sql"
-	"errors"
+	errs "github.com/nik-mLb/avito_task/internal/models/errs"
 
 	"github.com/google/uuid"
 	models "github.com/nik-mLb/avito_task/internal/models/reception"
@@ -32,11 +32,6 @@ const (
         RETURNING id, reception_date, pickup_point_id, status`
 )
 
-var (
-	ErrActiveReceptionExists = errors.New("active reception already exists")
-	ErrNoActiveReceptionToClose = errors.New("no active reception to close")
-)
-
 type ReceptionRepository struct {
 	db *sql.DB
 }
@@ -53,7 +48,7 @@ func (r *ReceptionRepository) CreateReception(ctx context.Context, pvzID uuid.UU
 		return nil, err
 	}
 	if exists {
-		return nil, ErrActiveReceptionExists
+		return nil, errs.ErrActiveReceptionExists
 	}
 
 	// Создаем новую приемку
@@ -72,7 +67,7 @@ func (r *ReceptionRepository) CloseReception(ctx context.Context, pvzID uuid.UUI
     
     if err != nil {
         if err == sql.ErrNoRows {
-            return nil, ErrNoActiveReceptionToClose
+            return nil, errs.ErrNoActiveReceptionToClose
         }
         return nil, err
     }

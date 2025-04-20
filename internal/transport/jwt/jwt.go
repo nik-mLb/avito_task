@@ -6,10 +6,7 @@ import (
 
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/nik-mLb/avito_task/config"
-)
-
-var (
-	ErrInvalidToken = errors.New("invalid token")
+	errs "github.com/nik-mLb/avito_task/internal/models/errs"
 )
 
 type JWTClaims struct {
@@ -56,12 +53,12 @@ func (t *Tokenator) ParseJWT(tokenString string) (*JWTClaims, error) {
 	})
 
 	if err != nil {
-		return nil, ErrInvalidToken
+		return nil, errs.ErrInvalidToken
 	}
 
 	if claims, ok := token.Claims.(*JWTClaims); ok && token.Valid {
 		return claims, nil
 	}
 
-	return nil, ErrInvalidToken
+	return nil, errs.ErrInvalidToken
 }

@@ -8,6 +8,14 @@ import (
 	models "github.com/nik-mLb/avito_task/internal/models/user"
 	"github.com/nik-mLb/avito_task/internal/transport/jwt"
 	"golang.org/x/crypto/bcrypt"
+	errs "github.com/nik-mLb/avito_task/internal/models/errs"
+)
+
+var (
+	allowedRoles = map[string]bool{
+		"worker":          true,
+		"admin": 		   true,
+	}
 )
 
 type AuthRepository interface {
@@ -44,6 +52,10 @@ func (uc *AuthUsecase) Authenticate(ctx context.Context, email, password string)
 }
 
 func (uc *AuthUsecase) Register(ctx context.Context, email, password, role string) (string, error) {
+	if !allowedRoles[role] {
+		return "", errs.ErrCityNotAllowed
+	}
+
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return "", err

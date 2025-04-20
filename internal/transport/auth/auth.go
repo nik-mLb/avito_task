@@ -4,6 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+
+	errs "github.com/nik-mLb/avito_task/internal/models/errs"
+	"github.com/nik-mLb/avito_task/internal/transport/dto"
+	response "github.com/nik-mLb/avito_task/internal/transport/utils"
 )
 
 type AuthUsecase interface {
@@ -20,53 +24,34 @@ func New(uc AuthUsecase) *AuthHandler {
 	return &AuthHandler{uc: uc}
 }
 
-type (
-	dummyLoginRequest struct {
-		Role string `json:"role"`
-	}
-
-	loginRequest struct {
-		Email    string `json:"email"`
-		Password string `json:"password"`
-	}
-
-	registerRequest struct {
-		Email    string `json:"email"`
-		Password string `json:"password"`
-		Role     string `json:"role"`
-	}
-
-	authResponse struct {
-		Token string `json:"token"`
-	}
-)
-
 func (h *AuthHandler) DummyLogin(w http.ResponseWriter, r *http.Request) {
-	var req dummyLoginRequest
+	var req dto.DummyLoginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request", http.StatusBadRequest)
+		response.SendError(r.Context(), w, http.StatusBadRequest, "Invalid request")
 		return
 	}
 
 	token, err := h.uc.DummyLogin(req.Role)
 	if err != nil {
-		http.Error(w, "Failed to generate token", http.StatusInternalServerError)
+		response.SendError(r.Context(), w, http.StatusBadRequest, "Failed to generate token")
 		return
 	}
 
-	json.NewEncoder(w).Encode(authResponse{Token: token})
+	responseTok := dto.TokenResponse{Token: token}
+
+	response.SendJSONResponse(r.Context(), w, http.StatusOK, responseTok)
 }
 
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
-	var req loginRequest
+	var req dto.LoginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request", http.StatusBadRequest)
+		response.SendError(r.Context(), w, http.StatusBadRequest, "Invalid request")
 		return
 	}
 
 	token, err := h.uc.Authenticate(r.Context(), req.Email, req.Password)
 	if err != nil {
-		http.Error(w, "Authentication failed", http.StatusUnauthorized)
+		response.SendError(r.Context(), w, http.StatusUnauthorized, "Incorrect data")
 		return
 	}
 
@@ -77,19 +62,26 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		Path:     "/",
 	})
 
-	json.NewEncoder(w).Encode(authResponse{Token: token})
+	respTok := dto.TokenResponse{Token: token}
+
+	response.SendJSONResponse(r.Context(), w, http.StatusOK, respTok)
 }
 
 func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
-	var req registerRequest
+	var req dto.RegisterRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request", http.StatusBadRequest)
+		response.SendError(r.Context(), w, http.StatusBadRequest, "Invalid request")
 		return
 	}
 
 	token, err := h.uc.Register(r.Context(), req.Email, req.Password, req.Role)
 	if err != nil {
-		http.Error(w, "Registration failed", http.StatusInternalServerError)
+		switch err {
+		case errs.ErrRoleNotAllowed:
+			response.SendError(r.Context(), w, http.StatusBadRequest, "Invalid role")
+		default:
+			response.SendError(r.Context(), w, http.StatusInternalServerError, "Failed registration")
+		}
 		return
 	}
 
@@ -100,5 +92,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		Path:     "/",
 	})
 
-	json.NewEncoder(w).Encode(authResponse{Token: token})
+	respTok := dto.TokenResponse{Token: token}
+
+	response.SendJSONResponse(r.Context(), w, http.StatusCreated, respTok)
 }
