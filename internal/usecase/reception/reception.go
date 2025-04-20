@@ -8,8 +8,9 @@ import (
 	models "github.com/nik-mLb/avito_task/internal/models/reception"
 )
 
+//go:generate mockgen -source=reception.go -destination=../../repository/mocks/reception_repository_mock.go -package=mocks ReceptionRepository
 type ReceptionRepository interface {
-	CreateReception(ctx context.Context, pvzID uuid.UUID) (*models.Reception, error)
+	CreateReception(ctx context.Context, receptionID uuid.UUID, pvzID uuid.UUID) (*models.Reception, error)
 	CloseReception(ctx context.Context, pvzID uuid.UUID) (*models.Reception, error)
 }
 
@@ -28,7 +29,9 @@ func (uc *ReceptionUsecase) CreateReception(ctx context.Context, pvzID string) (
 		return nil, err
 	}
 
-	return uc.repo.CreateReception(ctx, uuidPvzID)
+	receptionID := uuid.New()
+
+	return uc.repo.CreateReception(ctx, receptionID, uuidPvzID)
 }
 
 func (uc *ReceptionUsecase) CloseReception(ctx context.Context, pvzID string) (*models.Reception, error) {

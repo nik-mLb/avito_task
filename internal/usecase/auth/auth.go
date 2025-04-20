@@ -18,6 +18,7 @@ var (
 	}
 )
 
+//go:generate mockgen -source=auth.go -destination=../../repository/mocks/auth_repository_mock.go -package=mocks AuthRepository
 type AuthRepository interface {
 	CreateUser(ctx context.Context, email string, passwordHash []byte, role string) (*models.User, error)
 	GetUserByEmail(ctx context.Context, email string) (*models.User, error)

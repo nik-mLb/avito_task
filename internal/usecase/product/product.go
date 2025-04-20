@@ -8,6 +8,7 @@ import (
 	models "github.com/nik-mLb/avito_task/internal/models/product"
 )
 
+//go:generate mockgen -source=product.go -destination=../../repository/mocks/product_repository_mock.go -package=mocks ProductRepository
 type ProductRepository interface {
 	AddProduct(ctx context.Context, pvzID uuid.UUID, productType string) (*models.Product, error)
 	DeleteLastProduct(ctx context.Context, pvzID uuid.UUID) error

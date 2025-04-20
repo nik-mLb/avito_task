@@ -13,6 +13,7 @@ import (
 	errs "github.com/nik-mLb/avito_task/internal/models/errs"
 )
 
+//go:generate mockgen -source=pickup_point.go -destination=../../usecase/mocks/pickup_point_usecase_mock.go -package=mocks PickupPointUsecase
 type PickupPointUsecase interface {
 	CreatePickupPoint(ctx context.Context, city string) (*pickup.PickupPoint, error)
 	GetPickupPointsWithReceptions(ctx context.Context, startDate, endDate *time.Time, page, limit int) ([]dto.PickupPointListResponse, error)

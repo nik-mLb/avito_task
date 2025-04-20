@@ -10,6 +10,7 @@ import (
 	response "github.com/nik-mLb/avito_task/internal/transport/utils"
 )
 
+//go:generate mockgen -source=auth.go -destination=../../usecase/mocks/auth_usecase_mock.go -package=mocks AuthUsecase
 type AuthUsecase interface {
 	Authenticate(ctx context.Context, email, password string) (string, error)
 	Register(ctx context.Context, email, password, role string) (string, error)

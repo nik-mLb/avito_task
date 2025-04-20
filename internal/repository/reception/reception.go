@@ -40,7 +40,7 @@ func NewReceptionRepository(db *sql.DB) *ReceptionRepository {
 	return &ReceptionRepository{db: db}
 }
 
-func (r *ReceptionRepository) CreateReception(ctx context.Context, pvzID uuid.UUID) (*models.Reception, error) {
+func (r *ReceptionRepository) CreateReception(ctx context.Context, receptionID uuid.UUID, pvzID uuid.UUID) (*models.Reception, error) {
 	// Проверяем, есть ли активная приемка
 	var exists bool
 	err := r.db.QueryRowContext(ctx, CheckActiveReceptionQuery, pvzID).Scan(&exists)
@@ -53,7 +53,7 @@ func (r *ReceptionRepository) CreateReception(ctx context.Context, pvzID uuid.UU
 
 	// Создаем новую приемку
 	reception := &models.Reception{}
-	err = r.db.QueryRowContext(ctx, CreateReceptionQuery, uuid.New(), pvzID).
+	err = r.db.QueryRowContext(ctx, CreateReceptionQuery, receptionID, pvzID).
 		Scan(&reception.ID, &reception.ReceptionDate, &reception.PickupPointID, &reception.Status)
 
 	return reception, err

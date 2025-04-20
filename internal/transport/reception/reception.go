@@ -12,6 +12,7 @@ import (
 	"github.com/nik-mLb/avito_task/internal/transport/dto"
 )
 
+//go:generate mockgen -source=reception.go -destination=../../usecase/mocks/reception_usecase_mock.go -package=mocks ReceptionUsecase
 type ReceptionUsecase interface {
 	CreateReception(ctx context.Context, pvzID string) (*models.Reception, error)
 	CloseReception(ctx context.Context, pvzID string) (*models.Reception, error)

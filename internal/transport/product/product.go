@@ -12,6 +12,7 @@ import (
 	response "github.com/nik-mLb/avito_task/internal/transport/utils"
 )
 
+//go:generate mockgen -source=product.go -destination=../../usecase/mocks/product_usecase_mock.go -package=mocks ProductUsecase
 type ProductUsecase interface {
 	AddProduct(ctx context.Context, pvzID, productType string) (*models.Product, error)
 	DeleteLastProduct(ctx context.Context, pvzID string) error

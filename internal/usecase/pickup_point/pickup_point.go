@@ -17,6 +17,7 @@ var (
 	}
 )
 
+//go:generate mockgen -source=pickup_point.go -destination=../../repository/mocks/pickup_point_repository_mock.go -package=mocks PickupPointRepository
 type PickupPointRepository interface {
 	CreatePickupPoint(ctx context.Context, city string) (*models.PickupPoint, error)
 	GetPickupPointsWithReceptions(ctx context.Context, startDate, endDate *time.Time, page, limit int) ([]dto.PickupPointListResponse, error)
