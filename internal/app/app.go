@@ -118,3 +118,7 @@ func (a *App) Run() {
 		a.logger.Fatalf("Server failed: %v", err)
 	}
 }
+
+func (a *App) GetRouter() *mux.Router {
+    return a.router
+}

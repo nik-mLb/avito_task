@@ -21,7 +21,7 @@ const (
 	GetActiveReceptionQuery = `
 		SELECT id FROM reception 
 		WHERE pickup_point_id = $1 AND status = 'in_progress'
-		ORDER BY created_at DESC
+		ORDER BY reception_date DESC
 		LIMIT 1`
 
 	GetLastProductQuery = `
@@ -31,7 +31,7 @@ const (
             WHERE pickup_point_id = $1 AND status = 'in_progress'
             LIMIT 1
         )
-        ORDER BY created_at DESC
+        ORDER BY reception_date DESC
         LIMIT 1`
 
     DeleteProductQuery = `
