@@ -1,0 +1,1578 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>auth: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">github.com/nik-mLb/avito_task/internal/repository/auth/auth.go (100.0%)</option>
+				
+				<option value="file1">github.com/nik-mLb/avito_task/internal/repository/dbconnector.go (100.0%)</option>
+				
+				<option value="file2">github.com/nik-mLb/avito_task/internal/repository/pickup_point/pickup_point.go (83.7%)</option>
+				
+				<option value="file3">github.com/nik-mLb/avito_task/internal/repository/product/product.go (80.0%)</option>
+				
+				<option value="file4">github.com/nik-mLb/avito_task/internal/repository/reception/reception.go (78.6%)</option>
+				
+				<option value="file5">github.com/nik-mLb/avito_task/internal/transport/auth/auth.go (80.9%)</option>
+				
+				<option value="file6">github.com/nik-mLb/avito_task/internal/transport/jwt/jwt.go (80.0%)</option>
+				
+				<option value="file7">github.com/nik-mLb/avito_task/internal/transport/middleware/jwt.go (69.2%)</option>
+				
+				<option value="file8">github.com/nik-mLb/avito_task/internal/transport/middleware/logctx/logctx.go (100.0%)</option>
+				
+				<option value="file9">github.com/nik-mLb/avito_task/internal/transport/middleware/logger.go (100.0%)</option>
+				
+				<option value="file10">github.com/nik-mLb/avito_task/internal/transport/middleware/role.go (73.3%)</option>
+				
+				<option value="file11">github.com/nik-mLb/avito_task/internal/transport/pickup_point/pickup_point.go (91.3%)</option>
+				
+				<option value="file12">github.com/nik-mLb/avito_task/internal/transport/product/product.go (100.0%)</option>
+				
+				<option value="file13">github.com/nik-mLb/avito_task/internal/transport/reception/reception.go (89.3%)</option>
+				
+				<option value="file14">github.com/nik-mLb/avito_task/internal/transport/utils/response.go (55.0%)</option>
+				
+				<option value="file15">github.com/nik-mLb/avito_task/internal/usecase/auth/auth.go (81.4%)</option>
+				
+				<option value="file16">github.com/nik-mLb/avito_task/internal/usecase/pickup_point/pickup_point.go (86.4%)</option>
+				
+				<option value="file17">github.com/nik-mLb/avito_task/internal/usecase/product/product.go (100.0%)</option>
+				
+				<option value="file18">github.com/nik-mLb/avito_task/internal/usecase/reception/reception.go (100.0%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package repository
+
+import (
+        "context"
+        "database/sql"
+        "errors"
+        "fmt"
+
+        "github.com/google/uuid"
+        models "github.com/nik-mLb/avito_task/internal/models/user"
+        "github.com/nik-mLb/avito_task/internal/transport/middleware/logctx"
+)
+
+const (
+        createUserQuery = `
+                INSERT INTO "user" (id, email, password_hash, role) 
+                VALUES ($1, $2, $3, $4)
+                RETURNING id, email, role`
+
+        getUserByEmailQuery = `
+                SELECT id, email, password_hash, role 
+                FROM "user" 
+                WHERE email = $1`
+)
+
+type AuthRepository struct {
+        db *sql.DB
+}
+
+func New(db *sql.DB) *AuthRepository <span class="cov8" title="1">{
+        return &amp;AuthRepository{db: db}
+}</span>
+
+func (r *AuthRepository) CreateUser(ctx context.Context, email string, passwordHash []byte, role string) (*models.User, error) <span class="cov8" title="1">{
+        const op = "AuthRepository.CreateUser"
+        logger := logctx.GetLogger(ctx).WithField("op", op).
+                WithField("email", email).
+                WithField("role", role)
+                
+        user := &amp;models.User{
+                ID:           uuid.New(),
+                Email:        email,
+                PasswordHash: passwordHash,
+                Role:         role,
+        }
+
+        err := r.db.QueryRowContext(ctx, createUserQuery, 
+                user.ID, user.Email, user.PasswordHash, user.Role).
+                Scan(&amp;user.ID, &amp;user.Email, &amp;user.Role)
+
+        if err != nil </span><span class="cov8" title="1">{
+                logger.WithError(err).Error("failed to create user")
+                return nil, fmt.Errorf("%s: %w", op, err)
+        }</span>
+        
+        <span class="cov8" title="1">return user, nil</span>
+}
+
+func (r *AuthRepository) GetUserByEmail(ctx context.Context, email string) (*models.User, error) <span class="cov8" title="1">{
+        const op = "AuthRepository.GetUserByEmail"
+        logger := logctx.GetLogger(ctx).WithField("op", op).WithField("email", email)
+
+        var user models.User
+        err := r.db.QueryRowContext(ctx, getUserByEmailQuery, email).
+                Scan(&amp;user.ID, &amp;user.Email, &amp;user.PasswordHash, &amp;user.Role)
+
+        if err != nil </span><span class="cov8" title="1">{
+                if errors.Is(err, sql.ErrNoRows) </span><span class="cov8" title="1">{
+                        logger.Warn("user not found")
+                        return nil, nil
+                }</span>
+                <span class="cov8" title="1">logger.WithError(err).Error("failed to get user by email")
+                return nil, fmt.Errorf("%s: %w", op, err)</span>
+        }
+
+        <span class="cov8" title="1">return &amp;user, nil</span>
+}</pre>
+		
+		<pre class="file" id="file1" style="display: none">package repository
+
+import (
+        "fmt"
+
+        "github.com/nik-mLb/avito_task/config"
+)
+
+func GetConnectionString(conf *config.DBConfig) (string, error) <span class="cov8" title="1">{
+        return fmt.Sprintf(
+                "postgres://%s:%s@%s:%d/%s?sslmode=disable",
+                conf.User,
+                conf.Password,
+                conf.Host,
+                conf.Port,
+                conf.DB,
+        ), nil
+}</span>
+</pre>
+		
+		<pre class="file" id="file2" style="display: none">package repository
+
+import (
+        "context"
+        "database/sql"
+        "fmt"
+        "time"
+
+        "github.com/google/uuid"
+        pickup "github.com/nik-mLb/avito_task/internal/models/pickup_point"
+        product "github.com/nik-mLb/avito_task/internal/models/product"
+        reception "github.com/nik-mLb/avito_task/internal/models/reception"
+        "github.com/nik-mLb/avito_task/internal/transport/dto"
+        "github.com/nik-mLb/avito_task/internal/transport/middleware/logctx"
+)
+
+const (
+        CreatePickupPointQuery = `
+                INSERT INTO pickup_point (id, city) 
+                VALUES ($1, $2)
+                RETURNING id, city, registration_date`
+
+        GetPickupPointsWithReceptionsQuery = `
+        SELECT 
+                        pp.id, pp.city, pp.registration_date,
+                        r.id, r.reception_date, r.status,
+                        p.id, p.product_type, p.reception_date
+                FROM pickup_point pp
+                LEFT JOIN reception r ON pp.id = r.pickup_point_id
+                INNER JOIN product p ON r.id = p.reception_id  -- &lt;- Тут INNER вместо LEFT
+                WHERE ($1::timestamp IS NULL OR r.reception_date &gt;= $1)
+                AND ($2::timestamp IS NULL OR r.reception_date &lt;= $2)
+                ORDER BY pp.registration_date DESC
+                LIMIT $3 OFFSET $4`
+)
+
+type PickupPointRepository struct {
+        db *sql.DB
+}
+
+func NewPickupPointRepository(db *sql.DB) *PickupPointRepository <span class="cov8" title="1">{
+        return &amp;PickupPointRepository{db: db}
+}</span>
+
+func (r *PickupPointRepository) CreatePickupPoint(ctx context.Context, city string) (*pickup.PickupPoint, error) <span class="cov8" title="1">{
+        const op = "PickupPointRepository.CreatePickupPoint"
+        logger := logctx.GetLogger(ctx).WithField("op", op).WithField("city", city)
+        
+        pickupPoint := &amp;pickup.PickupPoint{
+                ID:   uuid.New(),
+                City: city,
+        }
+
+        err := r.db.QueryRowContext(ctx, CreatePickupPointQuery,
+                pickupPoint.ID, pickupPoint.City).
+                Scan(&amp;pickupPoint.ID, &amp;pickupPoint.City, &amp;pickupPoint.RegistrationDate)
+
+        if err != nil </span><span class="cov8" title="1">{
+                logger.WithError(err).Error("failed to create pickup point")
+                return nil, fmt.Errorf("%s: %w", op, err)
+        }</span>
+
+        <span class="cov8" title="1">return pickupPoint, err</span>
+}
+
+func (r *PickupPointRepository) GetPickupPointsWithReceptions(ctx context.Context, startDate, endDate *time.Time, page, limit int) ([]dto.PickupPointListResponse, error) <span class="cov8" title="1">{
+        const op = "PickupPointRepository.GetPickupPointsWithReceptions"
+        logger := logctx.GetLogger(ctx).WithField("op", op).
+                WithField("start_date", startDate).
+                WithField("end_date", endDate).
+                WithField("page", page).
+                WithField("limit", limit)
+
+        offset := (page - 1) * limit
+
+        rows, err := r.db.QueryContext(ctx, GetPickupPointsWithReceptionsQuery, startDate, endDate, limit, offset)
+        if err != nil </span><span class="cov8" title="1">{
+                logger.WithError(err).Error("failed to query pickup points")
+                return nil, fmt.Errorf("%s: %w", op, err)
+        }</span>
+        <span class="cov8" title="1">defer rows.Close()
+
+        results := make(map[uuid.UUID]*dto.PickupPointListResponse)
+
+        for rows.Next() </span><span class="cov8" title="1">{
+                var (
+                        pp         pickup.PickupPoint
+                        rec        reception.Reception
+                        prod       product.Product
+                        recID      uuid.NullUUID
+                        prodID     uuid.NullUUID
+                )
+
+                err := rows.Scan(
+                        &amp;pp.ID, &amp;pp.City, &amp;pp.RegistrationDate,
+                        &amp;recID, &amp;rec.ReceptionDate, &amp;rec.Status,
+                        &amp;prodID, &amp;prod.ProductType, &amp;prod.ReceptionDate,
+                )
+                if err != nil </span><span class="cov0" title="0">{
+                        scanErr := fmt.Errorf("failed to scan row: %w", err)
+                        logger.WithError(scanErr).Error("scan error")
+                        continue</span>
+                }
+
+                // Если это новый ПВЗ, добавляем его в результаты
+                <span class="cov8" title="1">if _, exists := results[pp.ID]; !exists </span><span class="cov8" title="1">{
+                        results[pp.ID] = &amp;dto.PickupPointListResponse{
+                                PickupPoint: pp,
+                                Receptions:  []dto.ReceptionWithProducts{},
+                        }
+                }</span>
+
+                // Если есть приемка, добавляем ее
+                <span class="cov8" title="1">if recID.Valid </span><span class="cov8" title="1">{
+                        rec.ID = recID.UUID
+                        rec.PickupPointID = pp.ID
+
+                        // Ищем приемку в списке
+                        var foundRec *dto.ReceptionWithProducts
+                        for i := range results[pp.ID].Receptions </span><span class="cov0" title="0">{
+                                if results[pp.ID].Receptions[i].Reception.ID == rec.ID </span><span class="cov0" title="0">{
+                                        foundRec = &amp;results[pp.ID].Receptions[i]
+                                        break</span>
+                                }
+                        }
+
+                        // Если приемка новая, добавляем ее
+                        <span class="cov8" title="1">if foundRec == nil </span><span class="cov8" title="1">{
+                                results[pp.ID].Receptions = append(results[pp.ID].Receptions, dto.ReceptionWithProducts{
+                                        Reception: rec,
+                                        Products:  []product.Product{},
+                                })
+                                foundRec = &amp;results[pp.ID].Receptions[len(results[pp.ID].Receptions)-1]
+                        }</span>
+
+                        // Если есть товар, добавляем его
+                        <span class="cov8" title="1">if prodID.Valid </span><span class="cov8" title="1">{
+                                prod.ID = prodID.UUID
+                                prod.ReceptionID = rec.ID
+                                foundRec.Products = append(foundRec.Products, prod)
+                        }</span>
+                }
+        }
+
+        <span class="cov8" title="1">if err = rows.Err(); err != nil </span><span class="cov0" title="0">{
+                logger.WithError(err).Error("rows iteration error")
+                return nil, fmt.Errorf("%s: %w", op, err)
+        }</span>
+
+        // Преобразуем map в slice
+        <span class="cov8" title="1">output := make([]dto.PickupPointListResponse, 0, len(results))
+        for _, v := range results </span><span class="cov8" title="1">{
+                output = append(output, *v)
+        }</span>
+
+        <span class="cov8" title="1">return output, nil</span>
+}</pre>
+		
+		<pre class="file" id="file3" style="display: none">package repository
+
+import (
+        "context"
+        "database/sql"
+        "errors"
+        "fmt"
+
+        "github.com/google/uuid"
+        errs "github.com/nik-mLb/avito_task/internal/models/errs"
+        models "github.com/nik-mLb/avito_task/internal/models/product"
+        "github.com/nik-mLb/avito_task/internal/transport/middleware/logctx"
+)
+
+const (
+        CreateProductQuery = `
+                INSERT INTO product (id, reception_id, product_type, reception_date) 
+                VALUES ($1, $2, $3, now())
+                RETURNING id, reception_id, product_type, reception_date`
+
+        GetActiveReceptionQuery = `
+                SELECT id FROM reception 
+                WHERE pickup_point_id = $1 AND status = 'in_progress'
+                ORDER BY reception_date DESC
+                LIMIT 1`
+
+        GetLastProductQuery = `
+        SELECT id FROM product 
+        WHERE reception_id = (
+            SELECT id FROM reception 
+            WHERE pickup_point_id = $1 AND status = 'in_progress'
+            LIMIT 1
+        )
+        ORDER BY reception_date DESC
+        LIMIT 1`
+
+    DeleteProductQuery = `
+        DELETE FROM product 
+        WHERE id = $1
+        RETURNING id`
+)
+
+type ProductRepository struct {
+        db *sql.DB
+}
+
+func NewProductRepository(db *sql.DB) *ProductRepository <span class="cov8" title="1">{
+        return &amp;ProductRepository{db: db}
+}</span>
+
+func (r *ProductRepository) AddProduct(ctx context.Context, pvzID uuid.UUID, productType string) (*models.Product, error) <span class="cov8" title="1">{
+        const op = "ProductRepository.AddProduct"
+        logger := logctx.GetLogger(ctx).WithField("op", op).WithField("pvz_id", pvzID).WithField("product_type", productType)
+    
+        var receptionID uuid.UUID
+        err := r.db.QueryRowContext(ctx, GetActiveReceptionQuery, pvzID).Scan(&amp;receptionID)
+        if err != nil </span><span class="cov8" title="1">{
+                if errors.Is(err, sql.ErrNoRows) </span><span class="cov8" title="1">{
+                        logger.Warn("no active reception found")
+                        return nil, errs.ErrNoActiveReception
+                }</span>
+                <span class="cov0" title="0">logger.WithError(err).Error("query active reception")
+                return nil, fmt.Errorf("%s: %w", op, err)</span>
+        }
+
+        <span class="cov8" title="1">product := &amp;models.Product{}
+        err = r.db.QueryRowContext(ctx, CreateProductQuery, uuid.New(), receptionID, productType).
+                Scan(&amp;product.ID, &amp;product.ReceptionID, &amp;product.ProductType, &amp;product.ReceptionDate)
+
+    if err != nil </span><span class="cov8" title="1">{
+        logger.WithError(err).Error("create product")
+        return nil, fmt.Errorf("%s: %w", op, err)
+    }</span>
+
+        <span class="cov8" title="1">return product, nil</span>
+}
+
+func (r *ProductRepository) DeleteLastProduct(ctx context.Context, pvzID uuid.UUID) error <span class="cov8" title="1">{
+    const op = "ProductRepository.DeleteLastProduct"
+        logger := logctx.GetLogger(ctx).WithField("op", op).WithField("pvz_id", pvzID)
+
+    tx, err := r.db.BeginTx(ctx, nil)
+    if err != nil </span><span class="cov8" title="1">{
+                logger.WithError(err).Error("begin transaction")
+                return fmt.Errorf("%s: %w", op, err)
+        }</span>
+    <span class="cov8" title="1">defer tx.Rollback()
+
+    var productID uuid.UUID
+    err = tx.QueryRowContext(ctx, GetLastProductQuery, pvzID).Scan(&amp;productID)
+    if err != nil </span><span class="cov8" title="1">{
+                if errors.Is(err, sql.ErrNoRows) </span><span class="cov8" title="1">{
+                        logger.Warn("no products to delete")
+                        return errs.ErrNoProductsToDelete
+                }</span>
+                <span class="cov0" title="0">logger.WithError(err).Error("query last product")
+                return fmt.Errorf("%s: %w", op, err)</span>
+        }
+
+    <span class="cov8" title="1">_, err = tx.ExecContext(ctx, DeleteProductQuery, productID)
+    if err != nil </span><span class="cov0" title="0">{
+                logger.WithError(err).Error("delete product")
+                return fmt.Errorf("%s: %w", op, err)
+        }</span>
+
+        <span class="cov8" title="1">if err := tx.Commit(); err != nil </span><span class="cov0" title="0">{
+                logger.WithError(err).Error("commit transaction")
+                return fmt.Errorf("%s: %w", op, err)
+        }</span>
+
+    <span class="cov8" title="1">return nil</span>
+}</pre>
+		
+		<pre class="file" id="file4" style="display: none">package repository
+
+import (
+        "context"
+        "database/sql"
+        "errors"
+        "fmt"
+
+        errs "github.com/nik-mLb/avito_task/internal/models/errs"
+        "github.com/nik-mLb/avito_task/internal/transport/middleware/logctx"
+
+        "github.com/google/uuid"
+        models "github.com/nik-mLb/avito_task/internal/models/reception"
+)
+
+const (
+        CreateReceptionQuery = `
+                INSERT INTO reception (id, pickup_point_id, status) 
+                VALUES ($1, $2, 'in_progress')
+                RETURNING id, reception_date, pickup_point_id, status`
+
+        CheckActiveReceptionQuery = `
+                SELECT EXISTS (
+                        SELECT 1 FROM reception 
+                        WHERE pickup_point_id = $1 AND status = 'in_progress'
+                )`
+
+        CloseReceptionQuery = `
+        UPDATE reception 
+        SET status = 'close' 
+        WHERE id = (
+            SELECT id FROM reception 
+            WHERE pickup_point_id = $1 AND status = 'in_progress'
+            LIMIT 1
+        )
+        RETURNING id, reception_date, pickup_point_id, status`
+)
+
+type ReceptionRepository struct {
+        db *sql.DB
+}
+
+func NewReceptionRepository(db *sql.DB) *ReceptionRepository <span class="cov8" title="1">{
+        return &amp;ReceptionRepository{db: db}
+}</span>
+
+func (r *ReceptionRepository) CreateReception(ctx context.Context, receptionID uuid.UUID, pvzID uuid.UUID) (*models.Reception, error) <span class="cov8" title="1">{
+        const op = "ReceptionRepository.CreateReception"
+        logger := logctx.GetLogger(ctx).WithField("op", op).WithField("pickup_point_id", pvzID)
+        
+        var exists bool
+        err := r.db.QueryRowContext(ctx, CheckActiveReceptionQuery, pvzID).Scan(&amp;exists)
+        if err != nil </span><span class="cov0" title="0">{
+                logger.WithError(err).Error("check active reception")
+                return nil, fmt.Errorf("%s: %w", op, err)
+        }</span>
+        <span class="cov8" title="1">if exists </span><span class="cov8" title="1">{
+                logger.Warn("active reception already exists")
+                return nil, errs.ErrActiveReceptionExists
+        }</span>
+
+        <span class="cov8" title="1">reception := &amp;models.Reception{}
+        err = r.db.QueryRowContext(ctx, CreateReceptionQuery, receptionID, pvzID).
+                Scan(&amp;reception.ID, &amp;reception.ReceptionDate, &amp;reception.PickupPointID, &amp;reception.Status)
+
+        if err != nil </span><span class="cov0" title="0">{
+                logger.WithError(err).Error("create reception")
+                return nil, fmt.Errorf("%s: %w", op, err)
+        }</span>
+
+        <span class="cov8" title="1">return reception, nil</span>
+}
+
+func (r *ReceptionRepository) CloseReception(ctx context.Context, pvzID uuid.UUID) (*models.Reception, error) <span class="cov8" title="1">{
+        const op = "ReceptionRepository.CloseReception"
+        logger := logctx.GetLogger(ctx).WithField("op", op).WithField("pickup_point_id", pvzID)
+
+    reception := &amp;models.Reception{}
+    
+    err := r.db.QueryRowContext(ctx, CloseReceptionQuery, pvzID).
+        Scan(&amp;reception.ID, &amp;reception.ReceptionDate, &amp;reception.PickupPointID, &amp;reception.Status)
+    
+    if err != nil </span><span class="cov8" title="1">{
+                if errors.Is(err, sql.ErrNoRows) </span><span class="cov8" title="1">{
+                        logger.Warn("no active reception to close")
+                        return nil, errs.ErrNoActiveReceptionToClose
+                }</span>
+                <span class="cov0" title="0">logger.WithError(err).Error("close reception")
+                return nil, fmt.Errorf("%s: %w", op, err)</span>
+        }
+    
+    <span class="cov8" title="1">return reception, nil</span>
+}</pre>
+		
+		<pre class="file" id="file5" style="display: none">package transport
+
+import (
+        "context"
+        "encoding/json"
+        "net/http"
+
+        errs "github.com/nik-mLb/avito_task/internal/models/errs"
+        "github.com/nik-mLb/avito_task/internal/transport/dto"
+        "github.com/nik-mLb/avito_task/internal/transport/middleware/logctx"
+        response "github.com/nik-mLb/avito_task/internal/transport/utils"
+)
+
+//go:generate mockgen -source=auth.go -destination=../../usecase/mocks/auth_usecase_mock.go -package=mocks AuthUsecase
+type AuthUsecase interface {
+        Authenticate(ctx context.Context, email, password string) (string, error)
+        Register(ctx context.Context, email, password, role string) (string, error)
+        DummyLogin(role string) (string, error)
+}
+
+type AuthHandler struct {
+        uc AuthUsecase
+}
+
+func New(uc AuthUsecase) *AuthHandler <span class="cov8" title="1">{
+        return &amp;AuthHandler{uc: uc}
+}</span>
+
+func (h *AuthHandler) DummyLogin(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
+        const op = "AuthHandler.DummyLogin"
+        logger := logctx.GetLogger(r.Context()).WithField("op", op)
+        
+        var req dto.DummyLoginRequest
+        if err := json.NewDecoder(r.Body).Decode(&amp;req); err != nil </span><span class="cov0" title="0">{
+                logger.WithError(err).Warn("failed to decode dummy login request")
+                response.SendError(r.Context(), w, http.StatusBadRequest, "Invalid request")
+                return
+        }</span>
+
+        <span class="cov8" title="1">token, err := h.uc.DummyLogin(req.Role)
+        if err != nil </span><span class="cov8" title="1">{
+                logger.WithError(err).Error("failed to generate dummy token")
+                response.SendError(r.Context(), w, http.StatusBadRequest, "Failed to generate token")
+                return
+        }</span>
+
+        <span class="cov8" title="1">responseTok := dto.TokenResponse{Token: token}
+
+        response.SendJSONResponse(r.Context(), w, http.StatusOK, responseTok)</span>
+}
+
+func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
+        const op = "AuthHandler.Login"
+        logger := logctx.GetLogger(r.Context()).WithField("op", op)
+
+        var req dto.LoginRequest
+        if err := json.NewDecoder(r.Body).Decode(&amp;req); err != nil </span><span class="cov0" title="0">{
+                logger.WithError(err).Warn("failed to decode login request")
+                response.SendError(r.Context(), w, http.StatusBadRequest, "Invalid request")
+                return
+        }</span>
+
+        <span class="cov8" title="1">token, err := h.uc.Authenticate(r.Context(), req.Email, req.Password)
+        if err != nil </span><span class="cov8" title="1">{
+                logger.WithError(err).Warn("authentication failed")
+                response.SendError(r.Context(), w, http.StatusUnauthorized, "Incorrect data")
+                return
+        }</span>
+
+        <span class="cov8" title="1">http.SetCookie(w, &amp;http.Cookie{
+                Name:     "token",
+                Value:    token,
+                HttpOnly: true,
+                Path:     "/",
+        })
+
+        respTok := dto.TokenResponse{Token: token}
+
+        response.SendJSONResponse(r.Context(), w, http.StatusOK, respTok)</span>
+}
+
+func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
+        const op = "AuthHandler.Register"
+        logger := logctx.GetLogger(r.Context()).WithField("op", op)
+
+        var req dto.RegisterRequest
+        if err := json.NewDecoder(r.Body).Decode(&amp;req); err != nil </span><span class="cov0" title="0">{
+                logger.WithError(err).Warn("failed to decode registration request")
+                response.SendError(r.Context(), w, http.StatusBadRequest, "Invalid request")
+                return
+        }</span>
+
+        <span class="cov8" title="1">token, err := h.uc.Register(r.Context(), req.Email, req.Password, req.Role)
+        if err != nil </span><span class="cov8" title="1">{
+                logger.WithError(err).Warn("registration failed")
+                switch err </span>{
+                case errs.ErrRoleNotAllowed:<span class="cov8" title="1">
+                        response.SendError(r.Context(), w, http.StatusBadRequest, "Invalid role")</span>
+                default:<span class="cov8" title="1">
+                        response.SendError(r.Context(), w, http.StatusInternalServerError, "Failed registration")</span>
+                }
+                <span class="cov8" title="1">return</span>
+        }
+
+        <span class="cov8" title="1">http.SetCookie(w, &amp;http.Cookie{
+                Name:     "token",
+                Value:    token,
+                HttpOnly: true,
+                Path:     "/",
+        })
+
+        respTok := dto.TokenResponse{Token: token}
+
+        response.SendJSONResponse(r.Context(), w, http.StatusCreated, respTok)</span>
+}</pre>
+		
+		<pre class="file" id="file6" style="display: none">package jwt
+
+import (
+        "errors"
+        "time"
+
+        "github.com/golang-jwt/jwt/v4"
+        "github.com/nik-mLb/avito_task/config"
+        errs "github.com/nik-mLb/avito_task/internal/models/errs"
+)
+
+type JWTClaims struct {
+        UserID string `json:"user_id"`
+        Role   string `json:"role"`
+        jwt.RegisteredClaims
+}
+
+type Tokenator struct {
+        sign          string
+        tokenLifeSpan time.Duration
+}
+
+func NewTokenator(conf *config.JWTConfig) *Tokenator <span class="cov8" title="1">{
+        return &amp;Tokenator{
+                sign:          conf.Signature,
+                tokenLifeSpan: conf.TokenLifeSpan,
+        }
+}</span>
+
+func (t *Tokenator) CreateJWT(userID, role string) (string, error) <span class="cov8" title="1">{
+        now := time.Now()
+        expiration := now.Add(t.tokenLifeSpan)
+
+        claims := JWTClaims{
+                UserID: userID,
+                Role:   role,
+                RegisteredClaims: jwt.RegisteredClaims{
+                        IssuedAt:  jwt.NewNumericDate(now),
+                        ExpiresAt: jwt.NewNumericDate(expiration),
+                },
+        }
+
+        token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+        return token.SignedString([]byte(t.sign))
+}</span>
+
+func (t *Tokenator) ParseJWT(tokenString string) (*JWTClaims, error) <span class="cov8" title="1">{
+        token, err := jwt.ParseWithClaims(tokenString, &amp;JWTClaims{}, func(token *jwt.Token) (interface{}, error) </span><span class="cov8" title="1">{
+                if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok </span><span class="cov0" title="0">{
+                        return nil, errors.New("unexpected signing method")
+                }</span>
+                <span class="cov8" title="1">return []byte(t.sign), nil</span>
+        })
+
+        <span class="cov8" title="1">if err != nil </span><span class="cov0" title="0">{
+                return nil, errs.ErrInvalidToken
+        }</span>
+
+        <span class="cov8" title="1">if claims, ok := token.Claims.(*JWTClaims); ok &amp;&amp; token.Valid </span><span class="cov8" title="1">{
+                return claims, nil
+        }</span>
+
+        <span class="cov0" title="0">return nil, errs.ErrInvalidToken</span>
+}</pre>
+		
+		<pre class="file" id="file7" style="display: none">package middleware
+
+import (
+        "context"
+        "net/http"
+
+        "github.com/nik-mLb/avito_task/internal/transport/jwt"
+)
+
+// Ключи для хранения в контексте
+type contextKey string
+
+const (
+        userIDKey contextKey = "userID"
+        roleKey   contextKey = "role"
+)
+
+// AuthMiddleware создает middleware для проверки аутентификации
+func AuthMiddleware(tokenator *jwt.Tokenator) func(http.Handler) http.Handler <span class="cov8" title="1">{
+        return func(next http.Handler) http.Handler </span><span class="cov8" title="1">{
+                return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) </span><span class="cov8" title="1">{
+                        // Получаем токен из куки
+                        cookie, err := r.Cookie("token")
+                        if err != nil </span><span class="cov0" title="0">{
+                                http.Error(w, "Token cookie is required", http.StatusUnauthorized)
+                                return
+                        }</span>
+
+                        // Парсим токен
+                        <span class="cov8" title="1">claims, err := tokenator.ParseJWT(cookie.Value)
+                        if err != nil </span><span class="cov0" title="0">{
+                                http.Error(w, "Invalid token", http.StatusUnauthorized)
+                                return
+                        }</span>
+
+                        // Добавляем данные в контекст
+                        <span class="cov8" title="1">ctx := context.WithValue(r.Context(), userIDKey, claims.UserID)
+                        ctx = context.WithValue(ctx, roleKey, claims.Role)
+
+                        // Передаем запрос дальше
+                        next.ServeHTTP(w, r.WithContext(ctx))</span>
+                })
+        }
+}</pre>
+		
+		<pre class="file" id="file8" style="display: none">package logctx
+
+import (
+        "context"
+        "github.com/nik-mLb/avito_task/internal/models/domains"
+
+        "github.com/sirupsen/logrus"
+)
+
+func WithLogger(ctx context.Context, logger *logrus.Entry) context.Context <span class="cov8" title="1">{
+        return context.WithValue(ctx, domains.LoggerKey{}, logger)
+}</span>
+
+func GetLogger(ctx context.Context) *logrus.Entry <span class="cov8" title="1">{
+        if logger, ok := ctx.Value(domains.LoggerKey{}).(*logrus.Entry); ok </span><span class="cov8" title="1">{
+                return logger
+        }</span>
+
+        <span class="cov8" title="1">return logrus.NewEntry(logrus.New())</span>
+}</pre>
+		
+		<pre class="file" id="file9" style="display: none">package middleware
+
+import (
+        "context"
+        "fmt"
+        "github.com/nik-mLb/avito_task/internal/models/domains"
+        "github.com/nik-mLb/avito_task/internal/transport/middleware/logctx"
+        "math/rand"
+        "net/http"
+        "time"
+
+        "github.com/sirupsen/logrus"
+)
+
+func LogRequest(logger *logrus.Logger, next http.Handler) http.Handler <span class="cov8" title="1">{
+        return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) </span><span class="cov8" title="1">{
+                rand.Seed(time.Now().UnixNano())
+                reqID := fmt.Sprintf("%016x", rand.Int())[:10]
+
+                ctx := context.WithValue(r.Context(), domains.ReqIDKey{}, reqID)
+
+                middlewareLogger := logger.WithFields(logrus.Fields{
+                        "request_id":  reqID,
+                        "method":      r.Method,
+                        "remote_addr": r.RemoteAddr,
+                        "path":        r.URL.Path,
+                })
+
+                // Логгер для передачи в контекст (только request_id)
+                contextLogger := logrus.NewEntry(logger).WithField("request_id", reqID) // Важно: создаём новый Entry
+                ctx = logctx.WithLogger(ctx, contextLogger)
+
+                middlewareLogger.Info("request started")
+
+                startTime := time.Now()
+
+                defer func() </span><span class="cov8" title="1">{
+                        duration := time.Since(startTime)
+                        middlewareLogger.WithField("duration", duration).Info("request completed")
+                }</span>()
+
+                <span class="cov8" title="1">next.ServeHTTP(w, r.WithContext(ctx))</span>
+        })
+}
+</pre>
+		
+		<pre class="file" id="file10" style="display: none">package middleware
+
+import (
+        "net/http"
+        response "github.com/nik-mLb/avito_task/internal/transport/utils"
+)
+
+// RoleMiddleware создает middleware для проверки роли
+func RoleMiddleware(allowedRoles ...string) func(http.Handler) http.Handler <span class="cov8" title="1">{
+        return func(next http.Handler) http.Handler </span><span class="cov8" title="1">{
+                return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) </span><span class="cov8" title="1">{
+                        // Получаем роль из контекста
+                        role, ok := r.Context().Value(roleKey).(string)
+                        if !ok </span><span class="cov0" title="0">{
+                                response.SendError(r.Context(), w, http.StatusInternalServerError, "Role not found in context")
+                                return
+                        }</span>
+
+                        // Проверяем роль
+                        <span class="cov8" title="1">allowed := false
+                        for _, r := range allowedRoles </span><span class="cov8" title="1">{
+                                if role == r </span><span class="cov8" title="1">{
+                                        allowed = true
+                                        break</span>
+                                }
+                        }
+
+                        <span class="cov8" title="1">if !allowed </span><span class="cov0" title="0">{
+                                response.SendError(r.Context(), w, http.StatusForbidden, "Insufficient permissions")
+                                return
+                        }</span>
+
+                        <span class="cov8" title="1">next.ServeHTTP(w, r)</span>
+                })
+        }
+}</pre>
+		
+		<pre class="file" id="file11" style="display: none">package transport
+
+import (
+        "context"
+        "encoding/json"
+        "net/http"
+        "strconv"
+        "time"
+
+        errs "github.com/nik-mLb/avito_task/internal/models/errs"
+        pickup "github.com/nik-mLb/avito_task/internal/models/pickup_point"
+        "github.com/nik-mLb/avito_task/internal/transport/dto"
+        "github.com/nik-mLb/avito_task/internal/transport/middleware/logctx"
+        response "github.com/nik-mLb/avito_task/internal/transport/utils"
+)
+
+//go:generate mockgen -source=pickup_point.go -destination=../../usecase/mocks/pickup_point_usecase_mock.go -package=mocks PickupPointUsecase
+type PickupPointUsecase interface {
+        CreatePickupPoint(ctx context.Context, city string) (*pickup.PickupPoint, error)
+        GetPickupPointsWithReceptions(ctx context.Context, startDate, endDate *time.Time, page, limit int) ([]dto.PickupPointListResponse, error)
+}
+
+type PickupPointHandler struct {
+        uc PickupPointUsecase
+}
+
+func NewPickupPointHandler(uc PickupPointUsecase) *PickupPointHandler <span class="cov8" title="1">{
+        return &amp;PickupPointHandler{uc: uc}
+}</span>
+
+func (h *PickupPointHandler) CreatePickupPoint(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
+        const op = "PickupPointHandler.CreatePickupPoint"
+        logger := logctx.GetLogger(r.Context()).WithField("op", op)
+        
+        var req dto.PickupPointRequest
+        if err := json.NewDecoder(r.Body).Decode(&amp;req); err != nil </span><span class="cov0" title="0">{
+                logger.WithError(err).Warn("invalid request body")
+                response.SendError(r.Context(), w, http.StatusBadRequest, "Invalid request")
+                return
+        }</span>
+
+        <span class="cov8" title="1">PickupPoint, err := h.uc.CreatePickupPoint(r.Context(), req.City)
+        if err != nil </span><span class="cov8" title="1">{
+                logger.WithError(err).WithField("city", req.City).Warn("failed to create pickup point")
+                switch err </span>{
+                case errs.ErrCityNotAllowed:<span class="cov8" title="1">
+                        response.SendError(r.Context(), w, http.StatusBadRequest, "City not allowed")</span>
+                default:<span class="cov8" title="1">
+                        response.SendError(r.Context(), w, http.StatusInternalServerError, "Failed to create PickupPoint")</span>
+                }
+                <span class="cov8" title="1">return</span>
+        }
+
+        <span class="cov8" title="1">response.SendJSONResponse(r.Context(), w, http.StatusCreated, PickupPoint)</span>
+}
+
+func (h *PickupPointHandler) GetPickupPointsWithReceptions(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
+        const op = "PickupPointHandler.GetPickupPointsWithReceptions"
+        logger := logctx.GetLogger(r.Context()).WithField("op", op)
+
+        query := r.URL.Query()
+
+        // Парсим даты
+        var startDate, endDate *time.Time
+        if startStr := query.Get("startDate"); startStr != "" </span><span class="cov8" title="1">{
+                if t, err := time.Parse(time.RFC3339, startStr); err == nil </span><span class="cov8" title="1">{
+                        startDate = &amp;t
+                }</span> else<span class="cov8" title="1"> {
+                        logger.WithField("startDate", startStr).WithError(err).Warn("invalid startDate")
+                }</span>
+        }
+        <span class="cov8" title="1">if endStr := query.Get("endDate"); endStr != "" </span><span class="cov8" title="1">{
+                if t, err := time.Parse(time.RFC3339, endStr); err == nil </span><span class="cov8" title="1">{
+                        endDate = &amp;t
+                }</span> else<span class="cov0" title="0"> {
+                        logger.WithField("endDate", endStr).WithError(err).Warn("invalid endDate")
+                }</span>
+        }
+
+        // Парсим пагинацию
+        <span class="cov8" title="1">page, _ := strconv.Atoi(query.Get("page"))
+        if page &lt; 1 </span><span class="cov8" title="1">{
+                page = 1
+        }</span>
+
+        <span class="cov8" title="1">limit, _ := strconv.Atoi(query.Get("limit"))
+        if limit &lt; 1 || limit &gt; 30 </span><span class="cov8" title="1">{
+                limit = 10
+        }</span>
+
+        // Получаем данные
+        <span class="cov8" title="1">result, err := h.uc.GetPickupPointsWithReceptions(r.Context(), startDate, endDate, page, limit)
+        if err != nil </span><span class="cov8" title="1">{
+                logger.WithError(err).Error("failed to get pickup points with receptions")
+                response.SendError(r.Context(), w, http.StatusInternalServerError, "Failed to get PickupPoints")
+                return
+        }</span>
+
+        // Преобразуем в ответ
+        <span class="cov8" title="1">resp := make([]dto.PickupPointListResponse, 0, len(result))
+        for _, item := range result </span><span class="cov8" title="1">{
+                receptions := make([]dto.ReceptionWithProducts, 0, len(item.Receptions))
+                for _, rec := range item.Receptions </span><span class="cov8" title="1">{
+                        receptions = append(receptions, dto.ReceptionWithProducts{
+                                Reception: rec.Reception,
+                                Products:  rec.Products,
+                        })
+                }</span>
+
+                <span class="cov8" title="1">resp = append(resp, dto.PickupPointListResponse{
+                        PickupPoint: item.PickupPoint,
+                        Receptions:  receptions,
+                })</span>
+        }
+
+        <span class="cov8" title="1">response.SendJSONResponse(r.Context(), w, http.StatusOK, resp)</span>
+}
+</pre>
+		
+		<pre class="file" id="file12" style="display: none">package transport
+
+import (
+        "context"
+        "encoding/json"
+        "net/http"
+
+        "github.com/gorilla/mux"
+        errs "github.com/nik-mLb/avito_task/internal/models/errs"
+        models "github.com/nik-mLb/avito_task/internal/models/product"
+        "github.com/nik-mLb/avito_task/internal/transport/dto"
+        "github.com/nik-mLb/avito_task/internal/transport/middleware/logctx"
+        response "github.com/nik-mLb/avito_task/internal/transport/utils"
+)
+
+//go:generate mockgen -source=product.go -destination=../../usecase/mocks/product_usecase_mock.go -package=mocks ProductUsecase
+type ProductUsecase interface {
+        AddProduct(ctx context.Context, pvzID, productType string) (*models.Product, error)
+        DeleteLastProduct(ctx context.Context, pvzID string) error
+}
+
+type ProductHandler struct {
+        uc ProductUsecase
+}
+
+func NewProductHandler(uc ProductUsecase) *ProductHandler <span class="cov8" title="1">{
+        return &amp;ProductHandler{uc: uc}
+}</span>
+
+func (h *ProductHandler) AddProduct(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
+        const op = "ProductHandler.AddProduct"
+        logger := logctx.GetLogger(r.Context()).WithField("op", op)
+        
+        var req dto.ProductRequest
+        if err := json.NewDecoder(r.Body).Decode(&amp;req); err != nil </span><span class="cov8" title="1">{
+                logger.WithError(err).Warn("invalid request body")
+                response.SendError(r.Context(), w, http.StatusBadRequest, "Invalid request")
+                return
+        }</span>
+
+        <span class="cov8" title="1">product, err := h.uc.AddProduct(r.Context(), req.PickupPointID, req.Type)
+        if err != nil </span><span class="cov8" title="1">{
+                logger.WithError(err).Warn("failed to add product")
+                switch err </span>{
+                case errs.ErrNoActiveReception:<span class="cov8" title="1">
+                        response.SendError(r.Context(), w, http.StatusBadRequest, "No active reception found")</span>
+                default:<span class="cov8" title="1">
+                        response.SendError(r.Context(), w, http.StatusInternalServerError, "Failed to add product")</span>
+                }
+                <span class="cov8" title="1">return</span>
+        }
+
+        <span class="cov8" title="1">response.SendJSONResponse(r.Context(), w, http.StatusCreated, product)</span>
+}
+
+func (h *ProductHandler) DeleteLastProduct(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
+    const op = "ProductHandler.DeleteLastProduct"
+        logger := logctx.GetLogger(r.Context()).WithField("op", op)
+
+    vars := mux.Vars(r)
+    pvzID := vars["pvzId"]
+
+    err := h.uc.DeleteLastProduct(r.Context(), pvzID)
+    if err != nil </span><span class="cov8" title="1">{
+                logger.WithError(err).Warn("failed to delete last product")
+                switch err </span>{
+                case errs.ErrNoProductsToDelete:<span class="cov8" title="1">
+                        response.SendError(r.Context(), w, http.StatusBadRequest, "No active reception found or no products to delete")</span>
+                default:<span class="cov8" title="1">
+                        response.SendError(r.Context(), w, http.StatusInternalServerError, "Failed to delete product")</span>
+                }
+                <span class="cov8" title="1">return</span>
+        }
+
+    <span class="cov8" title="1">w.WriteHeader(http.StatusOK)</span>
+}</pre>
+		
+		<pre class="file" id="file13" style="display: none">package transport
+
+import (
+        "context"
+        "encoding/json"
+        "net/http"
+
+        "github.com/gorilla/mux"
+        errs "github.com/nik-mLb/avito_task/internal/models/errs"
+        models "github.com/nik-mLb/avito_task/internal/models/reception"
+        "github.com/nik-mLb/avito_task/internal/transport/dto"
+        "github.com/nik-mLb/avito_task/internal/transport/middleware/logctx"
+        response "github.com/nik-mLb/avito_task/internal/transport/utils"
+)
+
+//go:generate mockgen -source=reception.go -destination=../../usecase/mocks/reception_usecase_mock.go -package=mocks ReceptionUsecase
+type ReceptionUsecase interface {
+        CreateReception(ctx context.Context, pvzID string) (*models.Reception, error)
+        CloseReception(ctx context.Context, pvzID string) (*models.Reception, error)
+}
+
+type ReceptionHandler struct {
+        uc ReceptionUsecase
+}
+
+func NewReceptionHandler(uc ReceptionUsecase) *ReceptionHandler <span class="cov8" title="1">{
+        return &amp;ReceptionHandler{uc: uc}
+}</span>
+
+func (h *ReceptionHandler) CreateReception(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
+        const op = "ReceptionHandler.CreateReception"
+        logger := logctx.GetLogger(r.Context()).WithField("op", op)
+        
+        var req dto.ReceptionRequest
+        if err := json.NewDecoder(r.Body).Decode(&amp;req); err != nil </span><span class="cov0" title="0">{
+                logger.WithError(err).Warn("invalid request body")
+                response.SendError(r.Context(), w, http.StatusBadRequest, "Invalid request")
+                return
+        }</span>
+
+        <span class="cov8" title="1">reception, err := h.uc.CreateReception(r.Context(), req.PickupPointID)
+        if err != nil </span><span class="cov8" title="1">{
+                logger.WithError(err).Warn("failed to create reception")
+                switch err </span>{
+                case errs.ErrActiveReceptionExists:<span class="cov8" title="1">
+                        response.SendError(r.Context(), w, http.StatusBadRequest, "Active reception already exists")</span>
+                default:<span class="cov8" title="1">
+                        response.SendError(r.Context(), w, http.StatusInternalServerError, "Failed to create reception")</span>
+                }
+                <span class="cov8" title="1">return</span>
+        }
+
+        <span class="cov8" title="1">response.SendJSONResponse(r.Context(), w, http.StatusCreated, reception)</span>
+}
+
+func (h *ReceptionHandler) CloseReception(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
+        const op = "ReceptionHandler.CloseReception"
+        logger := logctx.GetLogger(r.Context()).WithField("op", op)
+
+    vars := mux.Vars(r)
+    pvzID := vars["pvzId"]
+
+    reception, err := h.uc.CloseReception(r.Context(), pvzID)
+    if err != nil </span><span class="cov8" title="1">{
+                logger.WithError(err).Warn("failed to close reception")
+                switch err </span>{
+                case errs.ErrNoActiveReceptionToClose:<span class="cov8" title="1">
+                        response.SendError(r.Context(), w, http.StatusBadRequest, "No active reception to close")</span>
+                default:<span class="cov8" title="1">
+                        response.SendError(r.Context(), w, http.StatusInternalServerError, "Failed to close reception")</span>
+                }
+                <span class="cov8" title="1">return</span>
+        }
+
+        <span class="cov8" title="1">response.SendJSONResponse(r.Context(), w, http.StatusOK, reception)</span>
+}</pre>
+		
+		<pre class="file" id="file14" style="display: none">package response
+
+import (
+        "context"
+        "encoding/json"
+        "net/http"
+
+        "github.com/nik-mLb/avito_task/internal/transport/dto"
+        "github.com/nik-mLb/avito_task/internal/transport/middleware/logctx"
+)
+
+func SendError(ctx context.Context, w http.ResponseWriter, status int, message string) <span class="cov8" title="1">{
+        w.Header().Set("Content-Type", "application/json")
+        w.WriteHeader(status)
+        
+        resp, err := json.Marshal(dto.ErrorResponse{Message: message})
+        if err != nil </span><span class="cov0" title="0">{
+                logctx.GetLogger(ctx).Error("failed to marshal response: ", err.Error())
+                return
+        }</span>
+
+        <span class="cov8" title="1">if _, err := w.Write(resp); err != nil </span><span class="cov0" title="0">{
+                logctx.GetLogger(ctx).Error("failed to write response: ", err.Error())
+        }</span>
+}
+
+func SendJSONResponse(ctx context.Context, w http.ResponseWriter, statusCode int, body any) <span class="cov8" title="1">{
+        if body == nil </span><span class="cov0" title="0">{
+                w.WriteHeader(statusCode)
+                return
+        }</span>
+
+        <span class="cov8" title="1">w.Header().Set("Content-Type", "application/json")
+        resp, err := json.Marshal(body)
+        if err != nil </span><span class="cov0" title="0">{
+                w.WriteHeader(http.StatusInternalServerError)
+                logctx.GetLogger(ctx).Error("failed to marshal response", err.Error())
+                return
+        }</span>
+
+        <span class="cov8" title="1">w.WriteHeader(statusCode)
+        if _, err := w.Write(resp); err != nil </span><span class="cov0" title="0">{
+                logctx.GetLogger(ctx).Error("failed to write response", err.Error())
+        }</span>
+}</pre>
+		
+		<pre class="file" id="file15" style="display: none">package usecase
+
+import (
+        "context"
+        "errors"
+
+        "github.com/google/uuid"
+        errs "github.com/nik-mLb/avito_task/internal/models/errs"
+        models "github.com/nik-mLb/avito_task/internal/models/user"
+        "github.com/nik-mLb/avito_task/internal/transport/jwt"
+        "github.com/nik-mLb/avito_task/internal/transport/middleware/logctx"
+        "golang.org/x/crypto/bcrypt"
+)
+
+var (
+        allowedRoles = map[string]bool{
+                "worker":          true,
+                "admin":                    true,
+        }
+)
+
+//go:generate mockgen -source=auth.go -destination=../../repository/mocks/auth_repository_mock.go -package=mocks AuthRepository
+type AuthRepository interface {
+        CreateUser(ctx context.Context, email string, passwordHash []byte, role string) (*models.User, error)
+        GetUserByEmail(ctx context.Context, email string) (*models.User, error)
+}
+
+type AuthUsecase struct {
+        repo      AuthRepository
+        tokenator *jwt.Tokenator
+}
+
+func New(repo AuthRepository, tokenator *jwt.Tokenator) *AuthUsecase <span class="cov8" title="1">{
+        return &amp;AuthUsecase{
+                repo:      repo,
+                tokenator: tokenator,
+        }
+}</span>
+
+func (uc *AuthUsecase) Authenticate(ctx context.Context, email, password string) (string, error) <span class="cov8" title="1">{
+        const op = "AuthUsecase.Authenticate"
+        logger := logctx.GetLogger(ctx).WithField("op", op).WithField("email", email)
+
+        user, err := uc.repo.GetUserByEmail(ctx, email)
+        if err != nil </span><span class="cov8" title="1">{
+                logger.WithError(err).Warn("failed to get user by email")
+                return "", err
+        }</span>
+        <span class="cov8" title="1">if user == nil </span><span class="cov8" title="1">{
+                logger.Warn("user not found")
+                return "", errors.New("user not found")
+        }</span>
+
+        <span class="cov8" title="1">if err := bcrypt.CompareHashAndPassword(user.PasswordHash, []byte(password)); err != nil </span><span class="cov8" title="1">{
+                logger.Warn("invalid password")
+                return "", errors.New("invalid password")
+        }</span>
+
+        <span class="cov8" title="1">token, err := uc.tokenator.CreateJWT(user.ID.String(), user.Role)
+        if err != nil </span><span class="cov0" title="0">{
+                logger.WithError(err).Error("failed to create JWT")
+                return "", err
+        }</span>
+
+        <span class="cov8" title="1">return token, nil</span>
+}
+
+func (uc *AuthUsecase) Register(ctx context.Context, email, password, role string) (string, error) <span class="cov8" title="1">{
+        const op = "AuthUsecase.Register"
+        logger := logctx.GetLogger(ctx).WithField("op", op).WithFields(map[string]interface{}{
+                "email": email,
+                "role":  role,
+        })
+
+        if !allowedRoles[role] </span><span class="cov8" title="1">{
+                logger.Warn("role not allowed")
+                return "", errs.ErrCityNotAllowed
+        }</span>
+
+        <span class="cov8" title="1">hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+        if err != nil </span><span class="cov0" title="0">{
+                logger.WithError(err).Error("failed to hash password")
+                return "", err
+        }</span>
+
+        <span class="cov8" title="1">user, err := uc.repo.CreateUser(ctx, email, hashedPassword, role)
+        if err != nil </span><span class="cov8" title="1">{
+                logger.WithError(err).Error("failed to create user")
+                return "", err
+        }</span>
+
+        <span class="cov8" title="1">token, err := uc.tokenator.CreateJWT(user.ID.String(), user.Role)
+        if err != nil </span><span class="cov0" title="0">{
+                logger.WithError(err).Error("failed to create JWT after registration")
+                return "", err
+        }</span>
+
+        <span class="cov8" title="1">return token, nil</span>
+}
+
+func (uc *AuthUsecase) DummyLogin(role string) (string, error) <span class="cov8" title="1">{
+        const op = "AuthUsecase.DummyLogin"
+        logger := logctx.GetLogger(context.Background()).WithField("op", op).WithField("role", role)
+
+        token, err := uc.tokenator.CreateJWT(uuid.New().String(), role)
+        if err != nil </span><span class="cov0" title="0">{
+                logger.WithError(err).Error("failed to create dummy token")
+                return "", err
+        }</span>
+        
+        <span class="cov8" title="1">return token, nil</span>
+}</pre>
+		
+		<pre class="file" id="file16" style="display: none">package usecase
+
+import (
+        "context"
+        "time"
+
+        errs "github.com/nik-mLb/avito_task/internal/models/errs"
+        models "github.com/nik-mLb/avito_task/internal/models/pickup_point"
+        "github.com/nik-mLb/avito_task/internal/transport/dto"
+        "github.com/nik-mLb/avito_task/internal/transport/middleware/logctx"
+)
+
+var (
+        allowedCities = map[string]bool{
+                "Москва":          true,
+                "Санкт-Петербург": true,
+                "Казань":          true,
+        }
+)
+
+//go:generate mockgen -source=pickup_point.go -destination=../../repository/mocks/pickup_point_repository_mock.go -package=mocks PickupPointRepository
+type PickupPointRepository interface {
+        CreatePickupPoint(ctx context.Context, city string) (*models.PickupPoint, error)
+        GetPickupPointsWithReceptions(ctx context.Context, startDate, endDate *time.Time, page, limit int) ([]dto.PickupPointListResponse, error)
+}
+
+type PickupPointUsecase struct {
+        repo PickupPointRepository
+}
+
+func NewPickupPointUsecase(repo PickupPointRepository) *PickupPointUsecase <span class="cov8" title="1">{
+        return &amp;PickupPointUsecase{repo: repo}
+}</span>
+
+func (uc *PickupPointUsecase) CreatePickupPoint(ctx context.Context, city string) (*models.PickupPoint, error) <span class="cov8" title="1">{
+        const op = "PickupPointUsecase.CreatePickupPoint"
+        logger := logctx.GetLogger(ctx).WithField("op", op).WithField("city", city)
+
+        if !allowedCities[city] </span><span class="cov8" title="1">{
+                logger.Warn("attempt to create pickup point in disallowed city")
+                return nil, errs.ErrCityNotAllowed
+        }</span>
+
+        <span class="cov8" title="1">pvz, err := uc.repo.CreatePickupPoint(ctx, city)
+        if err != nil </span><span class="cov8" title="1">{
+                logger.WithError(err).Error("failed to create pickup point")
+                return nil, err
+        }</span>
+
+        <span class="cov8" title="1">return pvz, nil</span>
+}
+
+func (uc *PickupPointUsecase) GetPickupPointsWithReceptions(ctx context.Context, startDate, endDate *time.Time, page, limit int) ([]dto.PickupPointListResponse, error) <span class="cov8" title="1">{
+    const op = "PickupPointUsecase.GetPickupPointsWithReceptions"
+        logger := logctx.GetLogger(ctx).WithField("op", op).WithFields(map[string]interface{}{
+                "startDate": startDate,
+                "endDate":   endDate,
+                "page":      page,
+                "limit":     limit,
+        })
+
+        if page &lt; 1 </span><span class="cov0" title="0">{
+        page = 1
+    }</span>
+    <span class="cov8" title="1">if limit &lt; 1 || limit &gt; 30 </span><span class="cov0" title="0">{
+        limit = 10
+    }</span>
+
+    <span class="cov8" title="1">list, err := uc.repo.GetPickupPointsWithReceptions(ctx, startDate, endDate, page, limit)
+        if err != nil </span><span class="cov8" title="1">{
+                logger.WithError(err).Error("failed to get pickup points with receptions")
+                return nil, err
+        }</span>
+
+        <span class="cov0" title="0">return list, nil</span>
+}</pre>
+		
+		<pre class="file" id="file17" style="display: none">package usecase
+
+import (
+        "context"
+        "fmt"
+
+        "github.com/google/uuid"
+        models "github.com/nik-mLb/avito_task/internal/models/product"
+        "github.com/nik-mLb/avito_task/internal/transport/middleware/logctx"
+)
+
+//go:generate mockgen -source=product.go -destination=../../repository/mocks/product_repository_mock.go -package=mocks ProductRepository
+type ProductRepository interface {
+        AddProduct(ctx context.Context, pvzID uuid.UUID, productType string) (*models.Product, error)
+        DeleteLastProduct(ctx context.Context, pvzID uuid.UUID) error
+}
+
+type ProductUsecase struct {
+        repo ProductRepository
+}
+
+func NewProductUsecase(repo ProductRepository) *ProductUsecase <span class="cov8" title="1">{
+        return &amp;ProductUsecase{repo: repo}
+}</span>
+
+func (uc *ProductUsecase) AddProduct(ctx context.Context, pvzID, productType string) (*models.Product, error) <span class="cov8" title="1">{
+        const op = "ProductUsecase.AddProduct"
+        logger := logctx.GetLogger(ctx).WithField("op", op).WithFields(map[string]interface{}{
+                "pvz_id":      pvzID,
+                "productType": productType,
+        })
+        
+        uuidPvzID, err := uuid.Parse(pvzID)
+        if err != nil </span><span class="cov8" title="1">{
+                logger.WithError(err).Warn("invalid pvzID")
+                return nil, fmt.Errorf("invalid pvzId: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">switch models.ProductType(productType) </span>{
+        case models.Electronics, models.Clothing, models.Shoes:<span class="cov8" title="1"></span>
+                // valid type
+        default:<span class="cov8" title="1">
+                logger.Warn("invalid product type")
+                return nil, fmt.Errorf("invalid product type: %s", productType)</span>
+        }
+
+        <span class="cov8" title="1">product, err := uc.repo.AddProduct(ctx, uuidPvzID, productType)
+        if err != nil </span><span class="cov8" title="1">{
+                logger.WithError(err).Error("failed to add product")
+                return nil, err
+        }</span>
+
+        <span class="cov8" title="1">return product, nil</span>
+}
+
+func (uc *ProductUsecase) DeleteLastProduct(ctx context.Context, pvzID string) error <span class="cov8" title="1">{
+        const op = "ProductUsecase.DeleteLastProduct"
+        logger := logctx.GetLogger(ctx).WithField("op", op).WithField("pvz_id", pvzID)
+
+        uuidPvzID, err := uuid.Parse(pvzID)
+        if err != nil </span><span class="cov8" title="1">{
+                logger.WithError(err).Warn("invalid pvzID")
+                return fmt.Errorf("invalid pvzId: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">err = uc.repo.DeleteLastProduct(ctx, uuidPvzID)
+        if err != nil </span><span class="cov8" title="1">{
+                logger.WithError(err).Error("failed to delete last product")
+                return err
+        }</span>
+
+        <span class="cov8" title="1">return nil</span>
+}</pre>
+		
+		<pre class="file" id="file18" style="display: none">package usecase
+
+import (
+        "context"
+        "fmt"
+
+        "github.com/google/uuid"
+        models "github.com/nik-mLb/avito_task/internal/models/reception"
+        "github.com/nik-mLb/avito_task/internal/transport/middleware/logctx"
+)
+
+//go:generate mockgen -source=reception.go -destination=../../repository/mocks/reception_repository_mock.go -package=mocks ReceptionRepository
+type ReceptionRepository interface {
+        CreateReception(ctx context.Context, receptionID uuid.UUID, pvzID uuid.UUID) (*models.Reception, error)
+        CloseReception(ctx context.Context, pvzID uuid.UUID) (*models.Reception, error)
+}
+
+type ReceptionUsecase struct {
+        repo ReceptionRepository
+}
+
+func NewReceptionUsecase(repo ReceptionRepository) *ReceptionUsecase <span class="cov8" title="1">{
+        return &amp;ReceptionUsecase{repo: repo}
+}</span>
+
+func (uc *ReceptionUsecase) CreateReception(ctx context.Context, pvzID string) (*models.Reception, error) <span class="cov8" title="1">{
+        const op = "ReceptionUsecase.CreateReception"
+        logger := logctx.GetLogger(ctx).WithField("op", op).WithField("pvz_id", pvzID)
+
+        uuidPvzID, err := uuid.Parse(pvzID)
+        if err != nil </span><span class="cov8" title="1">{
+                logger.WithError(err).Warn("invalid pvzID")
+                return nil, err
+        }</span>
+
+        <span class="cov8" title="1">receptionID := uuid.New()
+
+        reception, err := uc.repo.CreateReception(ctx, receptionID, uuidPvzID)
+        if err != nil </span><span class="cov8" title="1">{
+                logger.WithError(err).Error("failed to create reception")
+                return nil, err
+        }</span>
+
+        <span class="cov8" title="1">return reception, nil</span>
+}
+
+func (uc *ReceptionUsecase) CloseReception(ctx context.Context, pvzID string) (*models.Reception, error) <span class="cov8" title="1">{
+    const op = "ReceptionUsecase.CloseReception"
+        logger := logctx.GetLogger(ctx).WithField("op", op).WithField("pvz_id", pvzID)
+
+        uuidPvzID, err := uuid.Parse(pvzID)
+        if err != nil </span><span class="cov8" title="1">{
+                logger.WithError(err).Warn("invalid pvzID")
+                return nil, fmt.Errorf("invalid pvzId: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">reception, err := uc.repo.CloseReception(ctx, uuidPvzID)
+        if err != nil </span><span class="cov8" title="1">{
+                logger.WithError(err).Error("failed to close reception")
+                return nil, err
+        }</span>
+
+        <span class="cov8" title="1">return reception, nil</span>
+}</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>
