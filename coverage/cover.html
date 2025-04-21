@@ -57,7 +57,7 @@
 				
 				<option value="file0">github.com/nik-mLb/avito_task/internal/repository/auth/auth.go (100.0%)</option>
 				
-				<option value="file1">github.com/nik-mLb/avito_task/internal/repository/dbconnector.go (0.0%)</option>
+				<option value="file1">github.com/nik-mLb/avito_task/internal/repository/dbconnector.go (100.0%)</option>
 				
 				<option value="file2">github.com/nik-mLb/avito_task/internal/repository/pickup_point/pickup_point.go (83.7%)</option>
 				
@@ -69,13 +69,13 @@
 				
 				<option value="file6">github.com/nik-mLb/avito_task/internal/transport/jwt/jwt.go (80.0%)</option>
 				
-				<option value="file7">github.com/nik-mLb/avito_task/internal/transport/middleware/jwt.go (0.0%)</option>
+				<option value="file7">github.com/nik-mLb/avito_task/internal/transport/middleware/jwt.go (69.2%)</option>
 				
-				<option value="file8">github.com/nik-mLb/avito_task/internal/transport/middleware/logctx/logctx.go (50.0%)</option>
+				<option value="file8">github.com/nik-mLb/avito_task/internal/transport/middleware/logctx/logctx.go (100.0%)</option>
 				
-				<option value="file9">github.com/nik-mLb/avito_task/internal/transport/middleware/logger.go (0.0%)</option>
+				<option value="file9">github.com/nik-mLb/avito_task/internal/transport/middleware/logger.go (100.0%)</option>
 				
-				<option value="file10">github.com/nik-mLb/avito_task/internal/transport/middleware/role.go (0.0%)</option>
+				<option value="file10">github.com/nik-mLb/avito_task/internal/transport/middleware/role.go (73.3%)</option>
 				
 				<option value="file11">github.com/nik-mLb/avito_task/internal/transport/pickup_point/pickup_point.go (91.3%)</option>
 				
@@ -87,7 +87,7 @@
 				
 				<option value="file15">github.com/nik-mLb/avito_task/internal/usecase/auth/auth.go (81.4%)</option>
 				
-				<option value="file16">github.com/nik-mLb/avito_task/internal/usecase/pickup_point/pickup_point.go (81.8%)</option>
+				<option value="file16">github.com/nik-mLb/avito_task/internal/usecase/pickup_point/pickup_point.go (86.4%)</option>
 				
 				<option value="file17">github.com/nik-mLb/avito_task/internal/usecase/product/product.go (100.0%)</option>
 				
@@ -191,7 +191,7 @@ import (
         "github.com/nik-mLb/avito_task/config"
 )
 
-func GetConnectionString(conf *config.DBConfig) (string, error) <span class="cov0" title="0">{
+func GetConnectionString(conf *config.DBConfig) (string, error) <span class="cov8" title="1">{
         return fmt.Sprintf(
                 "postgres://%s:%s@%s:%d/%s?sslmode=disable",
                 conf.User,
@@ -384,7 +384,7 @@ const (
         GetActiveReceptionQuery = `
                 SELECT id FROM reception 
                 WHERE pickup_point_id = $1 AND status = 'in_progress'
-                ORDER BY created_at DESC
+                ORDER BY reception_date DESC
                 LIMIT 1`
 
         GetLastProductQuery = `
@@ -394,7 +394,7 @@ const (
             WHERE pickup_point_id = $1 AND status = 'in_progress'
             LIMIT 1
         )
-        ORDER BY created_at DESC
+        ORDER BY reception_date DESC
         LIMIT 1`
 
     DeleteProductQuery = `
@@ -767,9 +767,9 @@ const (
 )
 
 // AuthMiddleware создает middleware для проверки аутентификации
-func AuthMiddleware(tokenator *jwt.Tokenator) func(http.Handler) http.Handler <span class="cov0" title="0">{
-        return func(next http.Handler) http.Handler </span><span class="cov0" title="0">{
-                return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) </span><span class="cov0" title="0">{
+func AuthMiddleware(tokenator *jwt.Tokenator) func(http.Handler) http.Handler <span class="cov8" title="1">{
+        return func(next http.Handler) http.Handler </span><span class="cov8" title="1">{
+                return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) </span><span class="cov8" title="1">{
                         // Получаем токен из куки
                         cookie, err := r.Cookie("token")
                         if err != nil </span><span class="cov0" title="0">{
@@ -778,14 +778,14 @@ func AuthMiddleware(tokenator *jwt.Tokenator) func(http.Handler) http.Handler <s
                         }</span>
 
                         // Парсим токен
-                        <span class="cov0" title="0">claims, err := tokenator.ParseJWT(cookie.Value)
+                        <span class="cov8" title="1">claims, err := tokenator.ParseJWT(cookie.Value)
                         if err != nil </span><span class="cov0" title="0">{
                                 http.Error(w, "Invalid token", http.StatusUnauthorized)
                                 return
                         }</span>
 
                         // Добавляем данные в контекст
-                        <span class="cov0" title="0">ctx := context.WithValue(r.Context(), userIDKey, claims.UserID)
+                        <span class="cov8" title="1">ctx := context.WithValue(r.Context(), userIDKey, claims.UserID)
                         ctx = context.WithValue(ctx, roleKey, claims.Role)
 
                         // Передаем запрос дальше
@@ -803,12 +803,12 @@ import (
         "github.com/sirupsen/logrus"
 )
 
-func WithLogger(ctx context.Context, logger *logrus.Entry) context.Context <span class="cov0" title="0">{
+func WithLogger(ctx context.Context, logger *logrus.Entry) context.Context <span class="cov8" title="1">{
         return context.WithValue(ctx, domains.LoggerKey{}, logger)
 }</span>
 
 func GetLogger(ctx context.Context) *logrus.Entry <span class="cov8" title="1">{
-        if logger, ok := ctx.Value(domains.LoggerKey{}).(*logrus.Entry); ok </span><span class="cov0" title="0">{
+        if logger, ok := ctx.Value(domains.LoggerKey{}).(*logrus.Entry); ok </span><span class="cov8" title="1">{
                 return logger
         }</span>
 
@@ -829,8 +829,8 @@ import (
         "github.com/sirupsen/logrus"
 )
 
-func LogRequest(logger *logrus.Logger, next http.Handler) http.Handler <span class="cov0" title="0">{
-        return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) </span><span class="cov0" title="0">{
+func LogRequest(logger *logrus.Logger, next http.Handler) http.Handler <span class="cov8" title="1">{
+        return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) </span><span class="cov8" title="1">{
                 rand.Seed(time.Now().UnixNano())
                 reqID := fmt.Sprintf("%016x", rand.Int())[:10]
 
@@ -851,12 +851,12 @@ func LogRequest(logger *logrus.Logger, next http.Handler) http.Handler <span cla
 
                 startTime := time.Now()
 
-                defer func() </span><span class="cov0" title="0">{
+                defer func() </span><span class="cov8" title="1">{
                         duration := time.Since(startTime)
                         middlewareLogger.WithField("duration", duration).Info("request completed")
                 }</span>()
 
-                <span class="cov0" title="0">next.ServeHTTP(w, r.WithContext(ctx))</span>
+                <span class="cov8" title="1">next.ServeHTTP(w, r.WithContext(ctx))</span>
         })
 }
 </pre>
@@ -869,9 +869,9 @@ import (
 )
 
 // RoleMiddleware создает middleware для проверки роли
-func RoleMiddleware(allowedRoles ...string) func(http.Handler) http.Handler <span class="cov0" title="0">{
-        return func(next http.Handler) http.Handler </span><span class="cov0" title="0">{
-                return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) </span><span class="cov0" title="0">{
+func RoleMiddleware(allowedRoles ...string) func(http.Handler) http.Handler <span class="cov8" title="1">{
+        return func(next http.Handler) http.Handler </span><span class="cov8" title="1">{
+                return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) </span><span class="cov8" title="1">{
                         // Получаем роль из контекста
                         role, ok := r.Context().Value(roleKey).(string)
                         if !ok </span><span class="cov0" title="0">{
@@ -880,20 +880,20 @@ func RoleMiddleware(allowedRoles ...string) func(http.Handler) http.Handler <spa
                         }</span>
 
                         // Проверяем роль
-                        <span class="cov0" title="0">allowed := false
-                        for _, r := range allowedRoles </span><span class="cov0" title="0">{
-                                if role == r </span><span class="cov0" title="0">{
+                        <span class="cov8" title="1">allowed := false
+                        for _, r := range allowedRoles </span><span class="cov8" title="1">{
+                                if role == r </span><span class="cov8" title="1">{
                                         allowed = true
                                         break</span>
                                 }
                         }
 
-                        <span class="cov0" title="0">if !allowed </span><span class="cov0" title="0">{
+                        <span class="cov8" title="1">if !allowed </span><span class="cov0" title="0">{
                                 response.SendError(r.Context(), w, http.StatusForbidden, "Insufficient permissions")
                                 return
                         }</span>
 
-                        <span class="cov0" title="0">next.ServeHTTP(w, r)</span>
+                        <span class="cov8" title="1">next.ServeHTTP(w, r)</span>
                 })
         }
 }</pre>
@@ -1379,7 +1379,7 @@ func (uc *PickupPointUsecase) CreatePickupPoint(ctx context.Context, city string
                 return nil, err
         }</span>
 
-        <span class="cov0" title="0">return pvz, nil</span>
+        <span class="cov8" title="1">return pvz, nil</span>
 }
 
 func (uc *PickupPointUsecase) GetPickupPointsWithReceptions(ctx context.Context, startDate, endDate *time.Time, page, limit int) ([]dto.PickupPointListResponse, error) <span class="cov8" title="1">{

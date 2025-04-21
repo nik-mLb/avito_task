@@ -176,7 +176,7 @@ func TestDeleteLastProduct(t *testing.T) {
                         WHERE pickup_point_id = $1 AND status = 'in_progress'
                         LIMIT 1
                     )
-                    ORDER BY created_at DESC
+                    ORDER BY reception_date DESC
                     LIMIT 1`).
                     WithArgs(sqlmock.AnyArg()).
                     WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(productID))
@@ -209,7 +209,7 @@ func TestDeleteLastProduct(t *testing.T) {
                         WHERE pickup_point_id = $1 AND status = 'in_progress'
                         LIMIT 1
                     )
-                    ORDER BY created_at DESC
+                    ORDER BY reception_date DESC
                     LIMIT 1`).
                     WithArgs(sqlmock.AnyArg()).
                     WillReturnError(sql.ErrNoRows)
