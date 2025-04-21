@@ -1,3 +1,7 @@
+//	@title			pvzAPI
+//	@version		1.0
+//	@description	API for pvz
+//	@host			localhost:8080
 package main
 
 import (
@@ -5,6 +9,7 @@ import (
 	"github.com/nik-mLb/avito_task/config"
 	"github.com/nik-mLb/avito_task/internal/app"
 	_ "github.com/lib/pq"
+	_ "github.com/nik-mLb/avito_task/docs"
 )
 
 func main() {

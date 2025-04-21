@@ -11,3 +11,7 @@ coverage: test
 
 clean-coverage:
 	rm -rf coverage/
+
+swag:
+	swag fmt
+	swag init -g ./cmd/app/main.go

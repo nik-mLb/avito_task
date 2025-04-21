@@ -1,7 +1,9 @@
 # Этап 1: Сборка приложения
-FROM golang:1.23.3 AS builder
+FROM golang:1.23.8 AS builder
 
 WORKDIR /app
+
+ENV GOPROXY=https://goproxy.io,direct
 
 # Копируем только файлы, необходимые для загрузки зависимостей
 COPY go.mod go.sum ./

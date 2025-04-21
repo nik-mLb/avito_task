@@ -23,6 +23,7 @@ import (
 	receptionuc "github.com/nik-mLb/avito_task/internal/usecase/reception"
 	productuc "github.com/nik-mLb/avito_task/internal/usecase/product"
 	"github.com/sirupsen/logrus"
+	httpSwagger "github.com/swaggo/http-swagger"
 )
 
 // App объединяет все компоненты приложения
@@ -34,6 +35,7 @@ type App struct {
 }
 
 // NewApp инициализирует приложение
+// @title pvzAPI
 func NewApp(conf *config.Config) (*App, error) {
 	logger := logrus.New()
 	logger.SetFormatter(&logrus.JSONFormatter{})
@@ -72,6 +74,10 @@ func NewApp(conf *config.Config) (*App, error) {
 	router.Use(func(next http.Handler) http.Handler {
 		return middleware.LogRequest(logger, next)
 	})
+
+	router.PathPrefix("/swagger/").Handler(httpSwagger.Handler(
+		httpSwagger.URL("/swagger/doc.json"), // URL для скачивания swagger.json
+	))
 
 	router.HandleFunc("/dummyLogin", authHandler.DummyLogin).Methods("POST")
 	router.HandleFunc("/login", authHandler.Login).Methods("POST")

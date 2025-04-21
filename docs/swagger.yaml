@@ -1,0 +1,126 @@
+definitions:
+  dto.DummyLoginRequest:
+    properties:
+      role:
+        type: string
+    type: object
+  dto.ErrorResponse:
+    properties:
+      message:
+        type: string
+    type: object
+  dto.LoginRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    type: object
+  dto.RegisterRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+      role:
+        type: string
+    type: object
+  dto.TokenResponse:
+    properties:
+      token:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: API for pvz
+  title: pvzAPI
+  version: "1.0"
+paths:
+  /dummyLogin:
+    post:
+      consumes:
+      - application/json
+      description: Генерирует токен для указанной роли (для тестирования)
+      parameters:
+      - description: Запрос
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.DummyLoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.TokenResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Получить тестовый токен
+      tags:
+      - Auth
+  /login:
+    post:
+      consumes:
+      - application/json
+      description: Вход в систему с email и паролем
+      parameters:
+      - description: Учетные данные
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.TokenResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Аутентификация пользователя
+      tags:
+      - Auth
+  /register:
+    post:
+      consumes:
+      - application/json
+      description: Создает нового пользователя с указанными данными
+      parameters:
+      - description: Данные регистрации
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.TokenResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Регистрация нового пользователя
+      tags:
+      - Auth
+swagger: "2.0"

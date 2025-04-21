@@ -27,6 +27,21 @@ func NewPickupPointHandler(uc PickupPointUsecase) *PickupPointHandler {
 	return &PickupPointHandler{uc: uc}
 }
 
+// CreatePickupPoint godoc
+//	@Summary		Создать новый пункт выдачи
+//	@Description	Создает новый пункт выдачи заказов (ПВЗ)
+//	@Tags			PVZ
+//	@Accept			json
+//	@Produce		json
+//	@Security		ApiKeyAuth
+//	@Param			Authorization	header		string					true	"Токен авторизации (Bearer)"
+//	@Param			request			body		dto.PickupPointRequest	true	"Данные для создания ПВЗ"
+//	@Success		201				{object}	pickup.PickupPoint
+//	@Failure		400				{object}	dto.ErrorResponse	"Некорректный запрос или город не разрешен"
+//	@Failure		401				{object}	dto.ErrorResponse	"Не авторизован"
+//	@Failure		403				{object}	dto.ErrorResponse	"Нет прав доступа"
+//	@Failure		500				{object}	dto.ErrorResponse	"Ошибка сервера"
+//	@Router			/pvz [post]
 func (h *PickupPointHandler) CreatePickupPoint(w http.ResponseWriter, r *http.Request) {
 	var req dto.PickupPointRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -48,6 +63,24 @@ func (h *PickupPointHandler) CreatePickupPoint(w http.ResponseWriter, r *http.Re
 	response.SendJSONResponse(r.Context(), w, http.StatusCreated, PickupPoint)
 }
 
+// GetPickupPointsWithReceptions godoc
+//	@Summary		Получить список ПВЗ с приемками
+//	@Description	Возвращает список пунктов выдачи с информацией о приемках товаров за указанный период
+//	@Tags			PVZ
+//	@Accept			json
+//	@Produce		json
+//	@Security		ApiKeyAuth
+//	@Param			Authorization	header		string	true	"Токен авторизации (Bearer)"
+//	@Param			startDate		query		string	false	"Начальная дата периода (формат RFC3339, например: 2023-01-01T00:00:00Z)"
+//	@Param			endDate			query		string	false	"Конечная дата периода (формат RFC3339, например: 2023-12-31T23:59:59Z)"
+//	@Param			page			query		int		false	"Номер страницы (по умолчанию 1)"
+//	@Param			limit			query		int		false	"Количество элементов на странице (по умолчанию 10, максимум 30)"
+//	@Success		200				{array}		dto.PickupPointListResponse
+//	@Failure		400				{object}	dto.ErrorResponse	"Некорректные параметры запроса"
+//	@Failure		401				{object}	dto.ErrorResponse	"Не авторизован"
+//	@Failure		403				{object}	dto.ErrorResponse	"Нет прав доступа"
+//	@Failure		500				{object}	dto.ErrorResponse	"Ошибка сервера"
+//	@Router			/pvz [get]
 func (h *PickupPointHandler) GetPickupPointsWithReceptions(w http.ResponseWriter, r *http.Request) {
 	// Парсим параметры запроса
 	query := r.URL.Query()

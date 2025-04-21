@@ -25,6 +25,16 @@ func New(uc AuthUsecase) *AuthHandler {
 	return &AuthHandler{uc: uc}
 }
 
+// DummyLogin godoc
+//	@Summary		Получить тестовый токен
+//	@Description	Генерирует токен для указанной роли (для тестирования)
+//	@Tags			Auth
+//	@Accept			json
+//	@Produce		json
+//	@Param			request	body		dto.DummyLoginRequest	true	"Запрос"
+//	@Success		200		{object}	dto.TokenResponse
+//	@Failure		400		{object}	dto.ErrorResponse
+//	@Router			/dummyLogin [post]
 func (h *AuthHandler) DummyLogin(w http.ResponseWriter, r *http.Request) {
 	var req dto.DummyLoginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -43,6 +53,17 @@ func (h *AuthHandler) DummyLogin(w http.ResponseWriter, r *http.Request) {
 	response.SendJSONResponse(r.Context(), w, http.StatusOK, responseTok)
 }
 
+// Login godoc
+//	@Summary		Аутентификация пользователя
+//	@Description	Вход в систему с email и паролем
+//	@Tags			Auth
+//	@Accept			json
+//	@Produce		json
+//	@Param			request	body		dto.LoginRequest	true	"Учетные данные"
+//	@Success		200		{object}	dto.TokenResponse
+//	@Failure		400		{object}	dto.ErrorResponse
+//	@Failure		401		{object}	dto.ErrorResponse
+//	@Router			/login [post]
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	var req dto.LoginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -68,6 +89,17 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	response.SendJSONResponse(r.Context(), w, http.StatusOK, respTok)
 }
 
+// Register godoc
+//	@Summary		Регистрация нового пользователя
+//	@Description	Создает нового пользователя с указанными данными
+//	@Tags			Auth
+//	@Accept			json
+//	@Produce		json
+//	@Param			request	body		dto.RegisterRequest	true	"Данные регистрации"
+//	@Success		201		{object}	dto.TokenResponse
+//	@Failure		400		{object}	dto.ErrorResponse
+//	@Failure		500		{object}	dto.ErrorResponse
+//	@Router			/register [post]
 func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	var req dto.RegisterRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
