@@ -1,11 +1,6 @@
 services:
   pvz-app:
-    build: 
-      context: .
-      dockerfile: Dockerfile
-    dns: 
-      - 8.8.8.8
-      - 1.1.1.1
+    build: .
     container_name: pvz_app
     ports:
       - "8080:8080" 
