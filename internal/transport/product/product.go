@@ -6,9 +6,10 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	models "github.com/nik-mLb/avito_task/internal/models/product"
 	errs "github.com/nik-mLb/avito_task/internal/models/errs"
+	models "github.com/nik-mLb/avito_task/internal/models/product"
 	"github.com/nik-mLb/avito_task/internal/transport/dto"
+	"github.com/nik-mLb/avito_task/internal/transport/middleware/logctx"
 	response "github.com/nik-mLb/avito_task/internal/transport/utils"
 )
 
@@ -27,14 +28,19 @@ func NewProductHandler(uc ProductUsecase) *ProductHandler {
 }
 
 func (h *ProductHandler) AddProduct(w http.ResponseWriter, r *http.Request) {
+	const op = "ProductHandler.AddProduct"
+	logger := logctx.GetLogger(r.Context()).WithField("op", op)
+	
 	var req dto.ProductRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		logger.WithError(err).Warn("invalid request body")
 		response.SendError(r.Context(), w, http.StatusBadRequest, "Invalid request")
 		return
 	}
 
 	product, err := h.uc.AddProduct(r.Context(), req.PickupPointID, req.Type)
 	if err != nil {
+		logger.WithError(err).Warn("failed to add product")
 		switch err {
 		case errs.ErrNoActiveReception:
 			response.SendError(r.Context(), w, http.StatusBadRequest, "No active reception found")
@@ -48,20 +54,23 @@ func (h *ProductHandler) AddProduct(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *ProductHandler) DeleteLastProduct(w http.ResponseWriter, r *http.Request) {
-    // Получаем pvzId из URL
+    const op = "ProductHandler.DeleteLastProduct"
+	logger := logctx.GetLogger(r.Context()).WithField("op", op)
+
     vars := mux.Vars(r)
     pvzID := vars["pvzId"]
 
     err := h.uc.DeleteLastProduct(r.Context(), pvzID)
     if err != nil {
-        switch err {
-        case errs.ErrNoProductsToDelete:
+		logger.WithError(err).Warn("failed to delete last product")
+		switch err {
+		case errs.ErrNoProductsToDelete:
 			response.SendError(r.Context(), w, http.StatusBadRequest, "No active reception found or no products to delete")
-        default:
+		default:
 			response.SendError(r.Context(), w, http.StatusInternalServerError, "Failed to delete product")
-        }
-        return
-    }
+		}
+		return
+	}
 
     w.WriteHeader(http.StatusOK)
 }

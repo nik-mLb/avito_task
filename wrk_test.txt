@@ -1,0 +1,15 @@
+        ПОЛУЧАЕМ ТОКЕН
+TOKEN=$(curl -s -X POST http://localhost:8080/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin","password":"admin"}' | jq -r '.token')
+
+        ТЕСТИРУЕМ
+wrk -t10 -c50 -d30s -H "Cookie: token=$TOKEN" "http://localhost:8080/pvz?startDate=2025-01-01T00:00:00Z&endDate=2025-12-31T23:59:59Z&page=1&limit=10"
+Running 30s test @ http://localhost:8080/pvz?startDate=2025-01-01T00:00:00Z&endDate=2025-12-31T23:59:59Z&page=1&limit=10
+  10 threads and 50 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   170.22ms  303.57ms   1.78s    85.98%
+    Req/Sec   384.40    179.67   670.00     69.20%
+  66301 requests in 30.05s, 191.59MB read
+Requests/sec:   2206.08
+Transfer/sec:      6.37MB

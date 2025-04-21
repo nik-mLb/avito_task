@@ -11,6 +11,7 @@ import (
 	product "github.com/nik-mLb/avito_task/internal/models/product"
 	reception "github.com/nik-mLb/avito_task/internal/models/reception"
 	"github.com/nik-mLb/avito_task/internal/transport/dto"
+	"github.com/nik-mLb/avito_task/internal/transport/middleware/logctx"
 )
 
 const (
@@ -42,6 +43,9 @@ func NewPickupPointRepository(db *sql.DB) *PickupPointRepository {
 }
 
 func (r *PickupPointRepository) CreatePickupPoint(ctx context.Context, city string) (*pickup.PickupPoint, error) {
+	const op = "PickupPointRepository.CreatePickupPoint"
+	logger := logctx.GetLogger(ctx).WithField("op", op).WithField("city", city)
+	
 	pickupPoint := &pickup.PickupPoint{
 		ID:   uuid.New(),
 		City: city,
@@ -51,15 +55,28 @@ func (r *PickupPointRepository) CreatePickupPoint(ctx context.Context, city stri
 		pickupPoint.ID, pickupPoint.City).
 		Scan(&pickupPoint.ID, &pickupPoint.City, &pickupPoint.RegistrationDate)
 
+	if err != nil {
+		logger.WithError(err).Error("failed to create pickup point")
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+
 	return pickupPoint, err
 }
 
 func (r *PickupPointRepository) GetPickupPointsWithReceptions(ctx context.Context, startDate, endDate *time.Time, page, limit int) ([]dto.PickupPointListResponse, error) {
+	const op = "PickupPointRepository.GetPickupPointsWithReceptions"
+	logger := logctx.GetLogger(ctx).WithField("op", op).
+		WithField("start_date", startDate).
+		WithField("end_date", endDate).
+		WithField("page", page).
+		WithField("limit", limit)
+
 	offset := (page - 1) * limit
 
 	rows, err := r.db.QueryContext(ctx, GetPickupPointsWithReceptionsQuery, startDate, endDate, limit, offset)
 	if err != nil {
-		return nil, fmt.Errorf("failed to query PickupPoints: %w", err)
+		logger.WithError(err).Error("failed to query pickup points")
+		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 	defer rows.Close()
 
@@ -80,7 +97,9 @@ func (r *PickupPointRepository) GetPickupPointsWithReceptions(ctx context.Contex
 			&prodID, &prod.ProductType, &prod.ReceptionDate,
 		)
 		if err != nil {
-			return nil, fmt.Errorf("failed to scan row: %w", err)
+			scanErr := fmt.Errorf("failed to scan row: %w", err)
+			logger.WithError(scanErr).Error("scan error")
+			continue
 		}
 
 		// Если это новый ПВЗ, добавляем его в результаты
@@ -124,7 +143,8 @@ func (r *PickupPointRepository) GetPickupPointsWithReceptions(ctx context.Contex
 	}
 
 	if err = rows.Err(); err != nil {
-		return nil, fmt.Errorf("rows iteration error: %w", err)
+		logger.WithError(err).Error("rows iteration error")
+		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
 	// Преобразуем map в slice

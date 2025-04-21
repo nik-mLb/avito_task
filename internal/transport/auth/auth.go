@@ -7,6 +7,7 @@ import (
 
 	errs "github.com/nik-mLb/avito_task/internal/models/errs"
 	"github.com/nik-mLb/avito_task/internal/transport/dto"
+	"github.com/nik-mLb/avito_task/internal/transport/middleware/logctx"
 	response "github.com/nik-mLb/avito_task/internal/transport/utils"
 )
 
@@ -26,14 +27,19 @@ func New(uc AuthUsecase) *AuthHandler {
 }
 
 func (h *AuthHandler) DummyLogin(w http.ResponseWriter, r *http.Request) {
+	const op = "AuthHandler.DummyLogin"
+	logger := logctx.GetLogger(r.Context()).WithField("op", op)
+	
 	var req dto.DummyLoginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		logger.WithError(err).Warn("failed to decode dummy login request")
 		response.SendError(r.Context(), w, http.StatusBadRequest, "Invalid request")
 		return
 	}
 
 	token, err := h.uc.DummyLogin(req.Role)
 	if err != nil {
+		logger.WithError(err).Error("failed to generate dummy token")
 		response.SendError(r.Context(), w, http.StatusBadRequest, "Failed to generate token")
 		return
 	}
@@ -44,14 +50,19 @@ func (h *AuthHandler) DummyLogin(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
+	const op = "AuthHandler.Login"
+	logger := logctx.GetLogger(r.Context()).WithField("op", op)
+
 	var req dto.LoginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		logger.WithError(err).Warn("failed to decode login request")
 		response.SendError(r.Context(), w, http.StatusBadRequest, "Invalid request")
 		return
 	}
 
 	token, err := h.uc.Authenticate(r.Context(), req.Email, req.Password)
 	if err != nil {
+		logger.WithError(err).Warn("authentication failed")
 		response.SendError(r.Context(), w, http.StatusUnauthorized, "Incorrect data")
 		return
 	}
@@ -69,14 +80,19 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
+	const op = "AuthHandler.Register"
+	logger := logctx.GetLogger(r.Context()).WithField("op", op)
+
 	var req dto.RegisterRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		logger.WithError(err).Warn("failed to decode registration request")
 		response.SendError(r.Context(), w, http.StatusBadRequest, "Invalid request")
 		return
 	}
 
 	token, err := h.uc.Register(r.Context(), req.Email, req.Password, req.Role)
 	if err != nil {
+		logger.WithError(err).Warn("registration failed")
 		switch err {
 		case errs.ErrRoleNotAllowed:
 			response.SendError(r.Context(), w, http.StatusBadRequest, "Invalid role")

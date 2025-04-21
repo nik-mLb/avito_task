@@ -7,10 +7,11 @@ import (
 	"strconv"
 	"time"
 
+	errs "github.com/nik-mLb/avito_task/internal/models/errs"
 	pickup "github.com/nik-mLb/avito_task/internal/models/pickup_point"
 	"github.com/nik-mLb/avito_task/internal/transport/dto"
+	"github.com/nik-mLb/avito_task/internal/transport/middleware/logctx"
 	response "github.com/nik-mLb/avito_task/internal/transport/utils"
-	errs "github.com/nik-mLb/avito_task/internal/models/errs"
 )
 
 //go:generate mockgen -source=pickup_point.go -destination=../../usecase/mocks/pickup_point_usecase_mock.go -package=mocks PickupPointUsecase
@@ -28,14 +29,19 @@ func NewPickupPointHandler(uc PickupPointUsecase) *PickupPointHandler {
 }
 
 func (h *PickupPointHandler) CreatePickupPoint(w http.ResponseWriter, r *http.Request) {
+	const op = "PickupPointHandler.CreatePickupPoint"
+	logger := logctx.GetLogger(r.Context()).WithField("op", op)
+	
 	var req dto.PickupPointRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		logger.WithError(err).Warn("invalid request body")
 		response.SendError(r.Context(), w, http.StatusBadRequest, "Invalid request")
 		return
 	}
 
 	PickupPoint, err := h.uc.CreatePickupPoint(r.Context(), req.City)
 	if err != nil {
+		logger.WithError(err).WithField("city", req.City).Warn("failed to create pickup point")
 		switch err {
 		case errs.ErrCityNotAllowed:
 			response.SendError(r.Context(), w, http.StatusBadRequest, "City not allowed")
@@ -49,7 +55,9 @@ func (h *PickupPointHandler) CreatePickupPoint(w http.ResponseWriter, r *http.Re
 }
 
 func (h *PickupPointHandler) GetPickupPointsWithReceptions(w http.ResponseWriter, r *http.Request) {
-	// Парсим параметры запроса
+	const op = "PickupPointHandler.GetPickupPointsWithReceptions"
+	logger := logctx.GetLogger(r.Context()).WithField("op", op)
+
 	query := r.URL.Query()
 
 	// Парсим даты
@@ -57,11 +65,15 @@ func (h *PickupPointHandler) GetPickupPointsWithReceptions(w http.ResponseWriter
 	if startStr := query.Get("startDate"); startStr != "" {
 		if t, err := time.Parse(time.RFC3339, startStr); err == nil {
 			startDate = &t
+		} else {
+			logger.WithField("startDate", startStr).WithError(err).Warn("invalid startDate")
 		}
 	}
 	if endStr := query.Get("endDate"); endStr != "" {
 		if t, err := time.Parse(time.RFC3339, endStr); err == nil {
 			endDate = &t
+		} else {
+			logger.WithField("endDate", endStr).WithError(err).Warn("invalid endDate")
 		}
 	}
 
@@ -79,6 +91,7 @@ func (h *PickupPointHandler) GetPickupPointsWithReceptions(w http.ResponseWriter
 	// Получаем данные
 	result, err := h.uc.GetPickupPointsWithReceptions(r.Context(), startDate, endDate, page, limit)
 	if err != nil {
+		logger.WithError(err).Error("failed to get pickup points with receptions")
 		response.SendError(r.Context(), w, http.StatusInternalServerError, "Failed to get PickupPoints")
 		return
 	}

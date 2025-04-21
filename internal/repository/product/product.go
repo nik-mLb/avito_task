@@ -3,9 +3,13 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"errors"
+	"fmt"
+
 	"github.com/google/uuid"
-	models "github.com/nik-mLb/avito_task/internal/models/product"
 	errs "github.com/nik-mLb/avito_task/internal/models/errs"
+	models "github.com/nik-mLb/avito_task/internal/models/product"
+	"github.com/nik-mLb/avito_task/internal/transport/middleware/logctx"
 )
 
 const (
@@ -45,48 +49,64 @@ func NewProductRepository(db *sql.DB) *ProductRepository {
 }
 
 func (r *ProductRepository) AddProduct(ctx context.Context, pvzID uuid.UUID, productType string) (*models.Product, error) {
-	// Получаем активную приемку
+	const op = "ProductRepository.AddProduct"
+	logger := logctx.GetLogger(ctx).WithField("op", op).WithField("pvz_id", pvzID).WithField("product_type", productType)
+    
 	var receptionID uuid.UUID
 	err := r.db.QueryRowContext(ctx, GetActiveReceptionQuery, pvzID).Scan(&receptionID)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
+			logger.Warn("no active reception found")
 			return nil, errs.ErrNoActiveReception
 		}
-		return nil, err
+		logger.WithError(err).Error("query active reception")
+		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
-	// Создаем товар
 	product := &models.Product{}
 	err = r.db.QueryRowContext(ctx, CreateProductQuery, uuid.New(), receptionID, productType).
 		Scan(&product.ID, &product.ReceptionID, &product.ProductType, &product.ReceptionDate)
 
-	return product, err
+    if err != nil {
+        logger.WithError(err).Error("create product")
+        return nil, fmt.Errorf("%s: %w", op, err)
+    }
+
+	return product, nil
 }
 
 func (r *ProductRepository) DeleteLastProduct(ctx context.Context, pvzID uuid.UUID) error {
-    // Начинаем транзакцию
+    const op = "ProductRepository.DeleteLastProduct"
+	logger := logctx.GetLogger(ctx).WithField("op", op).WithField("pvz_id", pvzID)
+
     tx, err := r.db.BeginTx(ctx, nil)
     if err != nil {
-        return err
-    }
+		logger.WithError(err).Error("begin transaction")
+		return fmt.Errorf("%s: %w", op, err)
+	}
     defer tx.Rollback()
 
-    // 1. Получаем ID последнего товара
     var productID uuid.UUID
     err = tx.QueryRowContext(ctx, GetLastProductQuery, pvzID).Scan(&productID)
     if err != nil {
-        if err == sql.ErrNoRows {
-            return errs.ErrNoProductsToDelete
-        }
-        return err
-    }
+		if errors.Is(err, sql.ErrNoRows) {
+			logger.Warn("no products to delete")
+			return errs.ErrNoProductsToDelete
+		}
+		logger.WithError(err).Error("query last product")
+		return fmt.Errorf("%s: %w", op, err)
+	}
 
-    // 2. Удаляем товар
     _, err = tx.ExecContext(ctx, DeleteProductQuery, productID)
     if err != nil {
-        return err
-    }
+		logger.WithError(err).Error("delete product")
+		return fmt.Errorf("%s: %w", op, err)
+	}
 
-    // Фиксируем транзакцию
-    return tx.Commit()
+	if err := tx.Commit(); err != nil {
+		logger.WithError(err).Error("commit transaction")
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+    return nil
 }

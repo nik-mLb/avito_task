@@ -40,3 +40,6 @@ CREATE TABLE product (
     product_type            TEXT NOT NULL,
     reception_date          TIMESTAMP NOT NULL DEFAULT now()
 );
+
+-- Для фильтрации по дате
+CREATE INDEX IF NOT EXISTS reception_reception_date_idx ON reception(reception_date);

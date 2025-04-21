@@ -59,35 +59,35 @@
 				
 				<option value="file1">github.com/nik-mLb/avito_task/internal/repository/dbconnector.go (0.0%)</option>
 				
-				<option value="file2">github.com/nik-mLb/avito_task/internal/repository/pickup_point/pickup_point.go (86.8%)</option>
+				<option value="file2">github.com/nik-mLb/avito_task/internal/repository/pickup_point/pickup_point.go (83.7%)</option>
 				
-				<option value="file3">github.com/nik-mLb/avito_task/internal/repository/product/product.go (87.5%)</option>
+				<option value="file3">github.com/nik-mLb/avito_task/internal/repository/product/product.go (80.0%)</option>
 				
-				<option value="file4">github.com/nik-mLb/avito_task/internal/repository/reception/reception.go (88.2%)</option>
+				<option value="file4">github.com/nik-mLb/avito_task/internal/repository/reception/reception.go (78.6%)</option>
 				
-				<option value="file5">github.com/nik-mLb/avito_task/internal/transport/auth/auth.go (82.9%)</option>
+				<option value="file5">github.com/nik-mLb/avito_task/internal/transport/auth/auth.go (80.9%)</option>
 				
 				<option value="file6">github.com/nik-mLb/avito_task/internal/transport/jwt/jwt.go (80.0%)</option>
 				
 				<option value="file7">github.com/nik-mLb/avito_task/internal/transport/middleware/jwt.go (0.0%)</option>
 				
-				<option value="file8">github.com/nik-mLb/avito_task/internal/transport/middleware/logctx/logctx.go (0.0%)</option>
+				<option value="file8">github.com/nik-mLb/avito_task/internal/transport/middleware/logctx/logctx.go (50.0%)</option>
 				
 				<option value="file9">github.com/nik-mLb/avito_task/internal/transport/middleware/logger.go (0.0%)</option>
 				
 				<option value="file10">github.com/nik-mLb/avito_task/internal/transport/middleware/role.go (0.0%)</option>
 				
-				<option value="file11">github.com/nik-mLb/avito_task/internal/transport/pickup_point/pickup_point.go (94.6%)</option>
+				<option value="file11">github.com/nik-mLb/avito_task/internal/transport/pickup_point/pickup_point.go (91.3%)</option>
 				
 				<option value="file12">github.com/nik-mLb/avito_task/internal/transport/product/product.go (100.0%)</option>
 				
-				<option value="file13">github.com/nik-mLb/avito_task/internal/transport/reception/reception.go (90.5%)</option>
+				<option value="file13">github.com/nik-mLb/avito_task/internal/transport/reception/reception.go (89.3%)</option>
 				
 				<option value="file14">github.com/nik-mLb/avito_task/internal/transport/utils/response.go (55.0%)</option>
 				
-				<option value="file15">github.com/nik-mLb/avito_task/internal/usecase/auth/auth.go (94.7%)</option>
+				<option value="file15">github.com/nik-mLb/avito_task/internal/usecase/auth/auth.go (81.4%)</option>
 				
-				<option value="file16">github.com/nik-mLb/avito_task/internal/usecase/pickup_point/pickup_point.go (77.8%)</option>
+				<option value="file16">github.com/nik-mLb/avito_task/internal/usecase/pickup_point/pickup_point.go (81.8%)</option>
 				
 				<option value="file17">github.com/nik-mLb/avito_task/internal/usecase/product/product.go (100.0%)</option>
 				
@@ -110,9 +110,12 @@
 import (
         "context"
         "database/sql"
+        "errors"
+        "fmt"
 
         "github.com/google/uuid"
         models "github.com/nik-mLb/avito_task/internal/models/user"
+        "github.com/nik-mLb/avito_task/internal/transport/middleware/logctx"
 )
 
 const (
@@ -136,6 +139,11 @@ func New(db *sql.DB) *AuthRepository <span class="cov8" title="1">{
 }</span>
 
 func (r *AuthRepository) CreateUser(ctx context.Context, email string, passwordHash []byte, role string) (*models.User, error) <span class="cov8" title="1">{
+        const op = "AuthRepository.CreateUser"
+        logger := logctx.GetLogger(ctx).WithField("op", op).
+                WithField("email", email).
+                WithField("role", role)
+                
         user := &amp;models.User{
                 ID:           uuid.New(),
                 Email:        email,
@@ -147,19 +155,32 @@ func (r *AuthRepository) CreateUser(ctx context.Context, email string, passwordH
                 user.ID, user.Email, user.PasswordHash, user.Role).
                 Scan(&amp;user.ID, &amp;user.Email, &amp;user.Role)
 
-        return user, err
-}</span>
+        if err != nil </span><span class="cov8" title="1">{
+                logger.WithError(err).Error("failed to create user")
+                return nil, fmt.Errorf("%s: %w", op, err)
+        }</span>
+        
+        <span class="cov8" title="1">return user, nil</span>
+}
 
 func (r *AuthRepository) GetUserByEmail(ctx context.Context, email string) (*models.User, error) <span class="cov8" title="1">{
+        const op = "AuthRepository.GetUserByEmail"
+        logger := logctx.GetLogger(ctx).WithField("op", op).WithField("email", email)
+
         var user models.User
         err := r.db.QueryRowContext(ctx, getUserByEmailQuery, email).
                 Scan(&amp;user.ID, &amp;user.Email, &amp;user.PasswordHash, &amp;user.Role)
 
-        if err == sql.ErrNoRows </span><span class="cov8" title="1">{
-                return nil, nil
-        }</span>
+        if err != nil </span><span class="cov8" title="1">{
+                if errors.Is(err, sql.ErrNoRows) </span><span class="cov8" title="1">{
+                        logger.Warn("user not found")
+                        return nil, nil
+                }</span>
+                <span class="cov8" title="1">logger.WithError(err).Error("failed to get user by email")
+                return nil, fmt.Errorf("%s: %w", op, err)</span>
+        }
 
-        <span class="cov8" title="1">return &amp;user, err</span>
+        <span class="cov8" title="1">return &amp;user, nil</span>
 }</pre>
 		
 		<pre class="file" id="file1" style="display: none">package repository
@@ -195,6 +216,7 @@ import (
         product "github.com/nik-mLb/avito_task/internal/models/product"
         reception "github.com/nik-mLb/avito_task/internal/models/reception"
         "github.com/nik-mLb/avito_task/internal/transport/dto"
+        "github.com/nik-mLb/avito_task/internal/transport/middleware/logctx"
 )
 
 const (
@@ -226,6 +248,9 @@ func NewPickupPointRepository(db *sql.DB) *PickupPointRepository <span class="co
 }</span>
 
 func (r *PickupPointRepository) CreatePickupPoint(ctx context.Context, city string) (*pickup.PickupPoint, error) <span class="cov8" title="1">{
+        const op = "PickupPointRepository.CreatePickupPoint"
+        logger := logctx.GetLogger(ctx).WithField("op", op).WithField("city", city)
+        
         pickupPoint := &amp;pickup.PickupPoint{
                 ID:   uuid.New(),
                 City: city,
@@ -235,15 +260,28 @@ func (r *PickupPointRepository) CreatePickupPoint(ctx context.Context, city stri
                 pickupPoint.ID, pickupPoint.City).
                 Scan(&amp;pickupPoint.ID, &amp;pickupPoint.City, &amp;pickupPoint.RegistrationDate)
 
-        return pickupPoint, err
-}</span>
+        if err != nil </span><span class="cov8" title="1">{
+                logger.WithError(err).Error("failed to create pickup point")
+                return nil, fmt.Errorf("%s: %w", op, err)
+        }</span>
+
+        <span class="cov8" title="1">return pickupPoint, err</span>
+}
 
 func (r *PickupPointRepository) GetPickupPointsWithReceptions(ctx context.Context, startDate, endDate *time.Time, page, limit int) ([]dto.PickupPointListResponse, error) <span class="cov8" title="1">{
+        const op = "PickupPointRepository.GetPickupPointsWithReceptions"
+        logger := logctx.GetLogger(ctx).WithField("op", op).
+                WithField("start_date", startDate).
+                WithField("end_date", endDate).
+                WithField("page", page).
+                WithField("limit", limit)
+
         offset := (page - 1) * limit
 
         rows, err := r.db.QueryContext(ctx, GetPickupPointsWithReceptionsQuery, startDate, endDate, limit, offset)
         if err != nil </span><span class="cov8" title="1">{
-                return nil, fmt.Errorf("failed to query PickupPoints: %w", err)
+                logger.WithError(err).Error("failed to query pickup points")
+                return nil, fmt.Errorf("%s: %w", op, err)
         }</span>
         <span class="cov8" title="1">defer rows.Close()
 
@@ -264,8 +302,10 @@ func (r *PickupPointRepository) GetPickupPointsWithReceptions(ctx context.Contex
                         &amp;prodID, &amp;prod.ProductType, &amp;prod.ReceptionDate,
                 )
                 if err != nil </span><span class="cov0" title="0">{
-                        return nil, fmt.Errorf("failed to scan row: %w", err)
-                }</span>
+                        scanErr := fmt.Errorf("failed to scan row: %w", err)
+                        logger.WithError(scanErr).Error("scan error")
+                        continue</span>
+                }
 
                 // Если это новый ПВЗ, добавляем его в результаты
                 <span class="cov8" title="1">if _, exists := results[pp.ID]; !exists </span><span class="cov8" title="1">{
@@ -308,7 +348,8 @@ func (r *PickupPointRepository) GetPickupPointsWithReceptions(ctx context.Contex
         }
 
         <span class="cov8" title="1">if err = rows.Err(); err != nil </span><span class="cov0" title="0">{
-                return nil, fmt.Errorf("rows iteration error: %w", err)
+                logger.WithError(err).Error("rows iteration error")
+                return nil, fmt.Errorf("%s: %w", op, err)
         }</span>
 
         // Преобразуем map в slice
@@ -325,9 +366,13 @@ func (r *PickupPointRepository) GetPickupPointsWithReceptions(ctx context.Contex
 import (
         "context"
         "database/sql"
+        "errors"
+        "fmt"
+
         "github.com/google/uuid"
-        models "github.com/nik-mLb/avito_task/internal/models/product"
         errs "github.com/nik-mLb/avito_task/internal/models/errs"
+        models "github.com/nik-mLb/avito_task/internal/models/product"
+        "github.com/nik-mLb/avito_task/internal/transport/middleware/logctx"
 )
 
 const (
@@ -367,50 +412,66 @@ func NewProductRepository(db *sql.DB) *ProductRepository <span class="cov8" titl
 }</span>
 
 func (r *ProductRepository) AddProduct(ctx context.Context, pvzID uuid.UUID, productType string) (*models.Product, error) <span class="cov8" title="1">{
-        // Получаем активную приемку
+        const op = "ProductRepository.AddProduct"
+        logger := logctx.GetLogger(ctx).WithField("op", op).WithField("pvz_id", pvzID).WithField("product_type", productType)
+    
         var receptionID uuid.UUID
         err := r.db.QueryRowContext(ctx, GetActiveReceptionQuery, pvzID).Scan(&amp;receptionID)
         if err != nil </span><span class="cov8" title="1">{
-                if err == sql.ErrNoRows </span><span class="cov8" title="1">{
+                if errors.Is(err, sql.ErrNoRows) </span><span class="cov8" title="1">{
+                        logger.Warn("no active reception found")
                         return nil, errs.ErrNoActiveReception
                 }</span>
-                <span class="cov0" title="0">return nil, err</span>
+                <span class="cov0" title="0">logger.WithError(err).Error("query active reception")
+                return nil, fmt.Errorf("%s: %w", op, err)</span>
         }
 
-        // Создаем товар
         <span class="cov8" title="1">product := &amp;models.Product{}
         err = r.db.QueryRowContext(ctx, CreateProductQuery, uuid.New(), receptionID, productType).
                 Scan(&amp;product.ID, &amp;product.ReceptionID, &amp;product.ProductType, &amp;product.ReceptionDate)
 
-        return product, err</span>
+    if err != nil </span><span class="cov8" title="1">{
+        logger.WithError(err).Error("create product")
+        return nil, fmt.Errorf("%s: %w", op, err)
+    }</span>
+
+        <span class="cov8" title="1">return product, nil</span>
 }
 
 func (r *ProductRepository) DeleteLastProduct(ctx context.Context, pvzID uuid.UUID) error <span class="cov8" title="1">{
-    // Начинаем транзакцию
+    const op = "ProductRepository.DeleteLastProduct"
+        logger := logctx.GetLogger(ctx).WithField("op", op).WithField("pvz_id", pvzID)
+
     tx, err := r.db.BeginTx(ctx, nil)
     if err != nil </span><span class="cov8" title="1">{
-        return err
-    }</span>
+                logger.WithError(err).Error("begin transaction")
+                return fmt.Errorf("%s: %w", op, err)
+        }</span>
     <span class="cov8" title="1">defer tx.Rollback()
 
-    // 1. Получаем ID последнего товара
     var productID uuid.UUID
     err = tx.QueryRowContext(ctx, GetLastProductQuery, pvzID).Scan(&amp;productID)
     if err != nil </span><span class="cov8" title="1">{
-        if err == sql.ErrNoRows </span><span class="cov8" title="1">{
-            return errs.ErrNoProductsToDelete
-        }</span>
-        <span class="cov0" title="0">return err</span>
-    }
+                if errors.Is(err, sql.ErrNoRows) </span><span class="cov8" title="1">{
+                        logger.Warn("no products to delete")
+                        return errs.ErrNoProductsToDelete
+                }</span>
+                <span class="cov0" title="0">logger.WithError(err).Error("query last product")
+                return fmt.Errorf("%s: %w", op, err)</span>
+        }
 
-    // 2. Удаляем товар
     <span class="cov8" title="1">_, err = tx.ExecContext(ctx, DeleteProductQuery, productID)
     if err != nil </span><span class="cov0" title="0">{
-        return err
-    }</span>
+                logger.WithError(err).Error("delete product")
+                return fmt.Errorf("%s: %w", op, err)
+        }</span>
 
-    // Фиксируем транзакцию
-    <span class="cov8" title="1">return tx.Commit()</span>
+        <span class="cov8" title="1">if err := tx.Commit(); err != nil </span><span class="cov0" title="0">{
+                logger.WithError(err).Error("commit transaction")
+                return fmt.Errorf("%s: %w", op, err)
+        }</span>
+
+    <span class="cov8" title="1">return nil</span>
 }</pre>
 		
 		<pre class="file" id="file4" style="display: none">package repository
@@ -418,7 +479,11 @@ func (r *ProductRepository) DeleteLastProduct(ctx context.Context, pvzID uuid.UU
 import (
         "context"
         "database/sql"
+        "errors"
+        "fmt"
+
         errs "github.com/nik-mLb/avito_task/internal/models/errs"
+        "github.com/nik-mLb/avito_task/internal/transport/middleware/logctx"
 
         "github.com/google/uuid"
         models "github.com/nik-mLb/avito_task/internal/models/reception"
@@ -456,36 +521,49 @@ func NewReceptionRepository(db *sql.DB) *ReceptionRepository <span class="cov8" 
 }</span>
 
 func (r *ReceptionRepository) CreateReception(ctx context.Context, receptionID uuid.UUID, pvzID uuid.UUID) (*models.Reception, error) <span class="cov8" title="1">{
-        // Проверяем, есть ли активная приемка
+        const op = "ReceptionRepository.CreateReception"
+        logger := logctx.GetLogger(ctx).WithField("op", op).WithField("pickup_point_id", pvzID)
+        
         var exists bool
         err := r.db.QueryRowContext(ctx, CheckActiveReceptionQuery, pvzID).Scan(&amp;exists)
         if err != nil </span><span class="cov0" title="0">{
-                return nil, err
+                logger.WithError(err).Error("check active reception")
+                return nil, fmt.Errorf("%s: %w", op, err)
         }</span>
         <span class="cov8" title="1">if exists </span><span class="cov8" title="1">{
+                logger.Warn("active reception already exists")
                 return nil, errs.ErrActiveReceptionExists
         }</span>
 
-        // Создаем новую приемку
         <span class="cov8" title="1">reception := &amp;models.Reception{}
         err = r.db.QueryRowContext(ctx, CreateReceptionQuery, receptionID, pvzID).
                 Scan(&amp;reception.ID, &amp;reception.ReceptionDate, &amp;reception.PickupPointID, &amp;reception.Status)
 
-        return reception, err</span>
+        if err != nil </span><span class="cov0" title="0">{
+                logger.WithError(err).Error("create reception")
+                return nil, fmt.Errorf("%s: %w", op, err)
+        }</span>
+
+        <span class="cov8" title="1">return reception, nil</span>
 }
 
 func (r *ReceptionRepository) CloseReception(ctx context.Context, pvzID uuid.UUID) (*models.Reception, error) <span class="cov8" title="1">{
+        const op = "ReceptionRepository.CloseReception"
+        logger := logctx.GetLogger(ctx).WithField("op", op).WithField("pickup_point_id", pvzID)
+
     reception := &amp;models.Reception{}
     
     err := r.db.QueryRowContext(ctx, CloseReceptionQuery, pvzID).
         Scan(&amp;reception.ID, &amp;reception.ReceptionDate, &amp;reception.PickupPointID, &amp;reception.Status)
     
     if err != nil </span><span class="cov8" title="1">{
-        if err == sql.ErrNoRows </span><span class="cov8" title="1">{
-            return nil, errs.ErrNoActiveReceptionToClose
-        }</span>
-        <span class="cov0" title="0">return nil, err</span>
-    }
+                if errors.Is(err, sql.ErrNoRows) </span><span class="cov8" title="1">{
+                        logger.Warn("no active reception to close")
+                        return nil, errs.ErrNoActiveReceptionToClose
+                }</span>
+                <span class="cov0" title="0">logger.WithError(err).Error("close reception")
+                return nil, fmt.Errorf("%s: %w", op, err)</span>
+        }
     
     <span class="cov8" title="1">return reception, nil</span>
 }</pre>
@@ -499,6 +577,7 @@ import (
 
         errs "github.com/nik-mLb/avito_task/internal/models/errs"
         "github.com/nik-mLb/avito_task/internal/transport/dto"
+        "github.com/nik-mLb/avito_task/internal/transport/middleware/logctx"
         response "github.com/nik-mLb/avito_task/internal/transport/utils"
 )
 
@@ -518,14 +597,19 @@ func New(uc AuthUsecase) *AuthHandler <span class="cov8" title="1">{
 }</span>
 
 func (h *AuthHandler) DummyLogin(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
+        const op = "AuthHandler.DummyLogin"
+        logger := logctx.GetLogger(r.Context()).WithField("op", op)
+        
         var req dto.DummyLoginRequest
         if err := json.NewDecoder(r.Body).Decode(&amp;req); err != nil </span><span class="cov0" title="0">{
+                logger.WithError(err).Warn("failed to decode dummy login request")
                 response.SendError(r.Context(), w, http.StatusBadRequest, "Invalid request")
                 return
         }</span>
 
         <span class="cov8" title="1">token, err := h.uc.DummyLogin(req.Role)
         if err != nil </span><span class="cov8" title="1">{
+                logger.WithError(err).Error("failed to generate dummy token")
                 response.SendError(r.Context(), w, http.StatusBadRequest, "Failed to generate token")
                 return
         }</span>
@@ -536,14 +620,19 @@ func (h *AuthHandler) DummyLogin(w http.ResponseWriter, r *http.Request) <span c
 }
 
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
+        const op = "AuthHandler.Login"
+        logger := logctx.GetLogger(r.Context()).WithField("op", op)
+
         var req dto.LoginRequest
         if err := json.NewDecoder(r.Body).Decode(&amp;req); err != nil </span><span class="cov0" title="0">{
+                logger.WithError(err).Warn("failed to decode login request")
                 response.SendError(r.Context(), w, http.StatusBadRequest, "Invalid request")
                 return
         }</span>
 
         <span class="cov8" title="1">token, err := h.uc.Authenticate(r.Context(), req.Email, req.Password)
         if err != nil </span><span class="cov8" title="1">{
+                logger.WithError(err).Warn("authentication failed")
                 response.SendError(r.Context(), w, http.StatusUnauthorized, "Incorrect data")
                 return
         }</span>
@@ -561,14 +650,19 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) <span class=
 }
 
 func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
+        const op = "AuthHandler.Register"
+        logger := logctx.GetLogger(r.Context()).WithField("op", op)
+
         var req dto.RegisterRequest
         if err := json.NewDecoder(r.Body).Decode(&amp;req); err != nil </span><span class="cov0" title="0">{
+                logger.WithError(err).Warn("failed to decode registration request")
                 response.SendError(r.Context(), w, http.StatusBadRequest, "Invalid request")
                 return
         }</span>
 
         <span class="cov8" title="1">token, err := h.uc.Register(r.Context(), req.Email, req.Password, req.Role)
         if err != nil </span><span class="cov8" title="1">{
+                logger.WithError(err).Warn("registration failed")
                 switch err </span>{
                 case errs.ErrRoleNotAllowed:<span class="cov8" title="1">
                         response.SendError(r.Context(), w, http.StatusBadRequest, "Invalid role")</span>
@@ -713,12 +807,12 @@ func WithLogger(ctx context.Context, logger *logrus.Entry) context.Context <span
         return context.WithValue(ctx, domains.LoggerKey{}, logger)
 }</span>
 
-func GetLogger(ctx context.Context) *logrus.Entry <span class="cov0" title="0">{
+func GetLogger(ctx context.Context) *logrus.Entry <span class="cov8" title="1">{
         if logger, ok := ctx.Value(domains.LoggerKey{}).(*logrus.Entry); ok </span><span class="cov0" title="0">{
                 return logger
         }</span>
 
-        <span class="cov0" title="0">return logrus.NewEntry(logrus.New())</span>
+        <span class="cov8" title="1">return logrus.NewEntry(logrus.New())</span>
 }</pre>
 		
 		<pre class="file" id="file9" style="display: none">package middleware
@@ -813,10 +907,11 @@ import (
         "strconv"
         "time"
 
+        errs "github.com/nik-mLb/avito_task/internal/models/errs"
         pickup "github.com/nik-mLb/avito_task/internal/models/pickup_point"
         "github.com/nik-mLb/avito_task/internal/transport/dto"
+        "github.com/nik-mLb/avito_task/internal/transport/middleware/logctx"
         response "github.com/nik-mLb/avito_task/internal/transport/utils"
-        errs "github.com/nik-mLb/avito_task/internal/models/errs"
 )
 
 //go:generate mockgen -source=pickup_point.go -destination=../../usecase/mocks/pickup_point_usecase_mock.go -package=mocks PickupPointUsecase
@@ -834,14 +929,19 @@ func NewPickupPointHandler(uc PickupPointUsecase) *PickupPointHandler <span clas
 }</span>
 
 func (h *PickupPointHandler) CreatePickupPoint(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
+        const op = "PickupPointHandler.CreatePickupPoint"
+        logger := logctx.GetLogger(r.Context()).WithField("op", op)
+        
         var req dto.PickupPointRequest
         if err := json.NewDecoder(r.Body).Decode(&amp;req); err != nil </span><span class="cov0" title="0">{
+                logger.WithError(err).Warn("invalid request body")
                 response.SendError(r.Context(), w, http.StatusBadRequest, "Invalid request")
                 return
         }</span>
 
         <span class="cov8" title="1">PickupPoint, err := h.uc.CreatePickupPoint(r.Context(), req.City)
         if err != nil </span><span class="cov8" title="1">{
+                logger.WithError(err).WithField("city", req.City).Warn("failed to create pickup point")
                 switch err </span>{
                 case errs.ErrCityNotAllowed:<span class="cov8" title="1">
                         response.SendError(r.Context(), w, http.StatusBadRequest, "City not allowed")</span>
@@ -855,7 +955,9 @@ func (h *PickupPointHandler) CreatePickupPoint(w http.ResponseWriter, r *http.Re
 }
 
 func (h *PickupPointHandler) GetPickupPointsWithReceptions(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
-        // Парсим параметры запроса
+        const op = "PickupPointHandler.GetPickupPointsWithReceptions"
+        logger := logctx.GetLogger(r.Context()).WithField("op", op)
+
         query := r.URL.Query()
 
         // Парсим даты
@@ -863,11 +965,15 @@ func (h *PickupPointHandler) GetPickupPointsWithReceptions(w http.ResponseWriter
         if startStr := query.Get("startDate"); startStr != "" </span><span class="cov8" title="1">{
                 if t, err := time.Parse(time.RFC3339, startStr); err == nil </span><span class="cov8" title="1">{
                         startDate = &amp;t
+                }</span> else<span class="cov8" title="1"> {
+                        logger.WithField("startDate", startStr).WithError(err).Warn("invalid startDate")
                 }</span>
         }
         <span class="cov8" title="1">if endStr := query.Get("endDate"); endStr != "" </span><span class="cov8" title="1">{
                 if t, err := time.Parse(time.RFC3339, endStr); err == nil </span><span class="cov8" title="1">{
                         endDate = &amp;t
+                }</span> else<span class="cov0" title="0"> {
+                        logger.WithField("endDate", endStr).WithError(err).Warn("invalid endDate")
                 }</span>
         }
 
@@ -885,6 +991,7 @@ func (h *PickupPointHandler) GetPickupPointsWithReceptions(w http.ResponseWriter
         // Получаем данные
         <span class="cov8" title="1">result, err := h.uc.GetPickupPointsWithReceptions(r.Context(), startDate, endDate, page, limit)
         if err != nil </span><span class="cov8" title="1">{
+                logger.WithError(err).Error("failed to get pickup points with receptions")
                 response.SendError(r.Context(), w, http.StatusInternalServerError, "Failed to get PickupPoints")
                 return
         }</span>
@@ -918,9 +1025,10 @@ import (
         "net/http"
 
         "github.com/gorilla/mux"
-        models "github.com/nik-mLb/avito_task/internal/models/product"
         errs "github.com/nik-mLb/avito_task/internal/models/errs"
+        models "github.com/nik-mLb/avito_task/internal/models/product"
         "github.com/nik-mLb/avito_task/internal/transport/dto"
+        "github.com/nik-mLb/avito_task/internal/transport/middleware/logctx"
         response "github.com/nik-mLb/avito_task/internal/transport/utils"
 )
 
@@ -939,14 +1047,19 @@ func NewProductHandler(uc ProductUsecase) *ProductHandler <span class="cov8" tit
 }</span>
 
 func (h *ProductHandler) AddProduct(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
+        const op = "ProductHandler.AddProduct"
+        logger := logctx.GetLogger(r.Context()).WithField("op", op)
+        
         var req dto.ProductRequest
         if err := json.NewDecoder(r.Body).Decode(&amp;req); err != nil </span><span class="cov8" title="1">{
+                logger.WithError(err).Warn("invalid request body")
                 response.SendError(r.Context(), w, http.StatusBadRequest, "Invalid request")
                 return
         }</span>
 
         <span class="cov8" title="1">product, err := h.uc.AddProduct(r.Context(), req.PickupPointID, req.Type)
         if err != nil </span><span class="cov8" title="1">{
+                logger.WithError(err).Warn("failed to add product")
                 switch err </span>{
                 case errs.ErrNoActiveReception:<span class="cov8" title="1">
                         response.SendError(r.Context(), w, http.StatusBadRequest, "No active reception found")</span>
@@ -960,20 +1073,23 @@ func (h *ProductHandler) AddProduct(w http.ResponseWriter, r *http.Request) <spa
 }
 
 func (h *ProductHandler) DeleteLastProduct(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
-    // Получаем pvzId из URL
+    const op = "ProductHandler.DeleteLastProduct"
+        logger := logctx.GetLogger(r.Context()).WithField("op", op)
+
     vars := mux.Vars(r)
     pvzID := vars["pvzId"]
 
     err := h.uc.DeleteLastProduct(r.Context(), pvzID)
     if err != nil </span><span class="cov8" title="1">{
-        switch err </span>{
-        case errs.ErrNoProductsToDelete:<span class="cov8" title="1">
+                logger.WithError(err).Warn("failed to delete last product")
+                switch err </span>{
+                case errs.ErrNoProductsToDelete:<span class="cov8" title="1">
                         response.SendError(r.Context(), w, http.StatusBadRequest, "No active reception found or no products to delete")</span>
-        default:<span class="cov8" title="1">
+                default:<span class="cov8" title="1">
                         response.SendError(r.Context(), w, http.StatusInternalServerError, "Failed to delete product")</span>
+                }
+                <span class="cov8" title="1">return</span>
         }
-        <span class="cov8" title="1">return</span>
-    }
 
     <span class="cov8" title="1">w.WriteHeader(http.StatusOK)</span>
 }</pre>
@@ -988,8 +1104,9 @@ import (
         "github.com/gorilla/mux"
         errs "github.com/nik-mLb/avito_task/internal/models/errs"
         models "github.com/nik-mLb/avito_task/internal/models/reception"
-        response "github.com/nik-mLb/avito_task/internal/transport/utils"
         "github.com/nik-mLb/avito_task/internal/transport/dto"
+        "github.com/nik-mLb/avito_task/internal/transport/middleware/logctx"
+        response "github.com/nik-mLb/avito_task/internal/transport/utils"
 )
 
 //go:generate mockgen -source=reception.go -destination=../../usecase/mocks/reception_usecase_mock.go -package=mocks ReceptionUsecase
@@ -1007,14 +1124,19 @@ func NewReceptionHandler(uc ReceptionUsecase) *ReceptionHandler <span class="cov
 }</span>
 
 func (h *ReceptionHandler) CreateReception(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
+        const op = "ReceptionHandler.CreateReception"
+        logger := logctx.GetLogger(r.Context()).WithField("op", op)
+        
         var req dto.ReceptionRequest
         if err := json.NewDecoder(r.Body).Decode(&amp;req); err != nil </span><span class="cov0" title="0">{
+                logger.WithError(err).Warn("invalid request body")
                 response.SendError(r.Context(), w, http.StatusBadRequest, "Invalid request")
                 return
         }</span>
 
         <span class="cov8" title="1">reception, err := h.uc.CreateReception(r.Context(), req.PickupPointID)
         if err != nil </span><span class="cov8" title="1">{
+                logger.WithError(err).Warn("failed to create reception")
                 switch err </span>{
                 case errs.ErrActiveReceptionExists:<span class="cov8" title="1">
                         response.SendError(r.Context(), w, http.StatusBadRequest, "Active reception already exists")</span>
@@ -1028,20 +1150,23 @@ func (h *ReceptionHandler) CreateReception(w http.ResponseWriter, r *http.Reques
 }
 
 func (h *ReceptionHandler) CloseReception(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
-    // Получаем pvzId из URL
+        const op = "ReceptionHandler.CloseReception"
+        logger := logctx.GetLogger(r.Context()).WithField("op", op)
+
     vars := mux.Vars(r)
     pvzID := vars["pvzId"]
 
     reception, err := h.uc.CloseReception(r.Context(), pvzID)
     if err != nil </span><span class="cov8" title="1">{
-        switch err </span>{
-        case errs.ErrNoActiveReceptionToClose:<span class="cov8" title="1">
+                logger.WithError(err).Warn("failed to close reception")
+                switch err </span>{
+                case errs.ErrNoActiveReceptionToClose:<span class="cov8" title="1">
                         response.SendError(r.Context(), w, http.StatusBadRequest, "No active reception to close")</span>
-        default:<span class="cov8" title="1">
+                default:<span class="cov8" title="1">
                         response.SendError(r.Context(), w, http.StatusInternalServerError, "Failed to close reception")</span>
+                }
+                <span class="cov8" title="1">return</span>
         }
-        <span class="cov8" title="1">return</span>
-    }
 
         <span class="cov8" title="1">response.SendJSONResponse(r.Context(), w, http.StatusOK, reception)</span>
 }</pre>
@@ -1099,10 +1224,11 @@ import (
         "errors"
 
         "github.com/google/uuid"
+        errs "github.com/nik-mLb/avito_task/internal/models/errs"
         models "github.com/nik-mLb/avito_task/internal/models/user"
         "github.com/nik-mLb/avito_task/internal/transport/jwt"
+        "github.com/nik-mLb/avito_task/internal/transport/middleware/logctx"
         "golang.org/x/crypto/bcrypt"
-        errs "github.com/nik-mLb/avito_task/internal/models/errs"
 )
 
 var (
@@ -1131,41 +1257,77 @@ func New(repo AuthRepository, tokenator *jwt.Tokenator) *AuthUsecase <span class
 }</span>
 
 func (uc *AuthUsecase) Authenticate(ctx context.Context, email, password string) (string, error) <span class="cov8" title="1">{
+        const op = "AuthUsecase.Authenticate"
+        logger := logctx.GetLogger(ctx).WithField("op", op).WithField("email", email)
+
         user, err := uc.repo.GetUserByEmail(ctx, email)
         if err != nil </span><span class="cov8" title="1">{
+                logger.WithError(err).Warn("failed to get user by email")
                 return "", err
         }</span>
         <span class="cov8" title="1">if user == nil </span><span class="cov8" title="1">{
+                logger.Warn("user not found")
                 return "", errors.New("user not found")
         }</span>
 
         <span class="cov8" title="1">if err := bcrypt.CompareHashAndPassword(user.PasswordHash, []byte(password)); err != nil </span><span class="cov8" title="1">{
+                logger.Warn("invalid password")
                 return "", errors.New("invalid password")
         }</span>
 
-        <span class="cov8" title="1">return uc.tokenator.CreateJWT(user.ID.String(), user.Role)</span>
+        <span class="cov8" title="1">token, err := uc.tokenator.CreateJWT(user.ID.String(), user.Role)
+        if err != nil </span><span class="cov0" title="0">{
+                logger.WithError(err).Error("failed to create JWT")
+                return "", err
+        }</span>
+
+        <span class="cov8" title="1">return token, nil</span>
 }
 
 func (uc *AuthUsecase) Register(ctx context.Context, email, password, role string) (string, error) <span class="cov8" title="1">{
+        const op = "AuthUsecase.Register"
+        logger := logctx.GetLogger(ctx).WithField("op", op).WithFields(map[string]interface{}{
+                "email": email,
+                "role":  role,
+        })
+
         if !allowedRoles[role] </span><span class="cov8" title="1">{
+                logger.Warn("role not allowed")
                 return "", errs.ErrCityNotAllowed
         }</span>
 
         <span class="cov8" title="1">hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
         if err != nil </span><span class="cov0" title="0">{
+                logger.WithError(err).Error("failed to hash password")
                 return "", err
         }</span>
 
         <span class="cov8" title="1">user, err := uc.repo.CreateUser(ctx, email, hashedPassword, role)
         if err != nil </span><span class="cov8" title="1">{
+                logger.WithError(err).Error("failed to create user")
                 return "", err
         }</span>
 
-        <span class="cov8" title="1">return uc.tokenator.CreateJWT(user.ID.String(), user.Role)</span>
+        <span class="cov8" title="1">token, err := uc.tokenator.CreateJWT(user.ID.String(), user.Role)
+        if err != nil </span><span class="cov0" title="0">{
+                logger.WithError(err).Error("failed to create JWT after registration")
+                return "", err
+        }</span>
+
+        <span class="cov8" title="1">return token, nil</span>
 }
 
 func (uc *AuthUsecase) DummyLogin(role string) (string, error) <span class="cov8" title="1">{
-        return uc.tokenator.CreateJWT(uuid.New().String(), role)
+        const op = "AuthUsecase.DummyLogin"
+        logger := logctx.GetLogger(context.Background()).WithField("op", op).WithField("role", role)
+
+        token, err := uc.tokenator.CreateJWT(uuid.New().String(), role)
+        if err != nil </span><span class="cov0" title="0">{
+                logger.WithError(err).Error("failed to create dummy token")
+                return "", err
+        }</span>
+        
+        <span class="cov8" title="1">return token, nil</span>
 }</pre>
 		
 		<pre class="file" id="file16" style="display: none">package usecase
@@ -1174,9 +1336,10 @@ import (
         "context"
         "time"
 
+        errs "github.com/nik-mLb/avito_task/internal/models/errs"
         models "github.com/nik-mLb/avito_task/internal/models/pickup_point"
         "github.com/nik-mLb/avito_task/internal/transport/dto"
-        errs "github.com/nik-mLb/avito_task/internal/models/errs"
+        "github.com/nik-mLb/avito_task/internal/transport/middleware/logctx"
 )
 
 var (
@@ -1202,22 +1365,46 @@ func NewPickupPointUsecase(repo PickupPointRepository) *PickupPointUsecase <span
 }</span>
 
 func (uc *PickupPointUsecase) CreatePickupPoint(ctx context.Context, city string) (*models.PickupPoint, error) <span class="cov8" title="1">{
+        const op = "PickupPointUsecase.CreatePickupPoint"
+        logger := logctx.GetLogger(ctx).WithField("op", op).WithField("city", city)
+
         if !allowedCities[city] </span><span class="cov8" title="1">{
+                logger.Warn("attempt to create pickup point in disallowed city")
                 return nil, errs.ErrCityNotAllowed
         }</span>
 
-        <span class="cov8" title="1">return uc.repo.CreatePickupPoint(ctx, city)</span>
+        <span class="cov8" title="1">pvz, err := uc.repo.CreatePickupPoint(ctx, city)
+        if err != nil </span><span class="cov8" title="1">{
+                logger.WithError(err).Error("failed to create pickup point")
+                return nil, err
+        }</span>
+
+        <span class="cov0" title="0">return pvz, nil</span>
 }
 
 func (uc *PickupPointUsecase) GetPickupPointsWithReceptions(ctx context.Context, startDate, endDate *time.Time, page, limit int) ([]dto.PickupPointListResponse, error) <span class="cov8" title="1">{
-    if page &lt; 1 </span><span class="cov0" title="0">{
+    const op = "PickupPointUsecase.GetPickupPointsWithReceptions"
+        logger := logctx.GetLogger(ctx).WithField("op", op).WithFields(map[string]interface{}{
+                "startDate": startDate,
+                "endDate":   endDate,
+                "page":      page,
+                "limit":     limit,
+        })
+
+        if page &lt; 1 </span><span class="cov0" title="0">{
         page = 1
     }</span>
     <span class="cov8" title="1">if limit &lt; 1 || limit &gt; 30 </span><span class="cov0" title="0">{
         limit = 10
     }</span>
 
-    <span class="cov8" title="1">return uc.repo.GetPickupPointsWithReceptions(ctx, startDate, endDate, page, limit)</span>
+    <span class="cov8" title="1">list, err := uc.repo.GetPickupPointsWithReceptions(ctx, startDate, endDate, page, limit)
+        if err != nil </span><span class="cov8" title="1">{
+                logger.WithError(err).Error("failed to get pickup points with receptions")
+                return nil, err
+        }</span>
+
+        <span class="cov0" title="0">return list, nil</span>
 }</pre>
 		
 		<pre class="file" id="file17" style="display: none">package usecase
@@ -1228,6 +1415,7 @@ import (
 
         "github.com/google/uuid"
         models "github.com/nik-mLb/avito_task/internal/models/product"
+        "github.com/nik-mLb/avito_task/internal/transport/middleware/logctx"
 )
 
 //go:generate mockgen -source=product.go -destination=../../repository/mocks/product_repository_mock.go -package=mocks ProductRepository
@@ -1245,31 +1433,52 @@ func NewProductUsecase(repo ProductRepository) *ProductUsecase <span class="cov8
 }</span>
 
 func (uc *ProductUsecase) AddProduct(ctx context.Context, pvzID, productType string) (*models.Product, error) <span class="cov8" title="1">{
-        // Валидация UUID
+        const op = "ProductUsecase.AddProduct"
+        logger := logctx.GetLogger(ctx).WithField("op", op).WithFields(map[string]interface{}{
+                "pvz_id":      pvzID,
+                "productType": productType,
+        })
+        
         uuidPvzID, err := uuid.Parse(pvzID)
         if err != nil </span><span class="cov8" title="1">{
+                logger.WithError(err).Warn("invalid pvzID")
                 return nil, fmt.Errorf("invalid pvzId: %w", err)
         }</span>
 
-        // Валидация типа товара
         <span class="cov8" title="1">switch models.ProductType(productType) </span>{
         case models.Electronics, models.Clothing, models.Shoes:<span class="cov8" title="1"></span>
                 // valid type
         default:<span class="cov8" title="1">
+                logger.Warn("invalid product type")
                 return nil, fmt.Errorf("invalid product type: %s", productType)</span>
         }
 
-        <span class="cov8" title="1">return uc.repo.AddProduct(ctx, uuidPvzID, productType)</span>
+        <span class="cov8" title="1">product, err := uc.repo.AddProduct(ctx, uuidPvzID, productType)
+        if err != nil </span><span class="cov8" title="1">{
+                logger.WithError(err).Error("failed to add product")
+                return nil, err
+        }</span>
+
+        <span class="cov8" title="1">return product, nil</span>
 }
 
 func (uc *ProductUsecase) DeleteLastProduct(ctx context.Context, pvzID string) error <span class="cov8" title="1">{
-    // Валидация UUID
-    uuidPvzID, err := uuid.Parse(pvzID)
-    if err != nil </span><span class="cov8" title="1">{
-        return fmt.Errorf("invalid pvzId: %w", err)
-    }</span>
+        const op = "ProductUsecase.DeleteLastProduct"
+        logger := logctx.GetLogger(ctx).WithField("op", op).WithField("pvz_id", pvzID)
 
-    <span class="cov8" title="1">return uc.repo.DeleteLastProduct(ctx, uuidPvzID)</span>
+        uuidPvzID, err := uuid.Parse(pvzID)
+        if err != nil </span><span class="cov8" title="1">{
+                logger.WithError(err).Warn("invalid pvzID")
+                return fmt.Errorf("invalid pvzId: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">err = uc.repo.DeleteLastProduct(ctx, uuidPvzID)
+        if err != nil </span><span class="cov8" title="1">{
+                logger.WithError(err).Error("failed to delete last product")
+                return err
+        }</span>
+
+        <span class="cov8" title="1">return nil</span>
 }</pre>
 		
 		<pre class="file" id="file18" style="display: none">package usecase
@@ -1280,6 +1489,7 @@ import (
 
         "github.com/google/uuid"
         models "github.com/nik-mLb/avito_task/internal/models/reception"
+        "github.com/nik-mLb/avito_task/internal/transport/middleware/logctx"
 )
 
 //go:generate mockgen -source=reception.go -destination=../../repository/mocks/reception_repository_mock.go -package=mocks ReceptionRepository
@@ -1297,25 +1507,43 @@ func NewReceptionUsecase(repo ReceptionRepository) *ReceptionUsecase <span class
 }</span>
 
 func (uc *ReceptionUsecase) CreateReception(ctx context.Context, pvzID string) (*models.Reception, error) <span class="cov8" title="1">{
-        // Валидация UUID
+        const op = "ReceptionUsecase.CreateReception"
+        logger := logctx.GetLogger(ctx).WithField("op", op).WithField("pvz_id", pvzID)
+
         uuidPvzID, err := uuid.Parse(pvzID)
         if err != nil </span><span class="cov8" title="1">{
+                logger.WithError(err).Warn("invalid pvzID")
                 return nil, err
         }</span>
 
         <span class="cov8" title="1">receptionID := uuid.New()
 
-        return uc.repo.CreateReception(ctx, receptionID, uuidPvzID)</span>
+        reception, err := uc.repo.CreateReception(ctx, receptionID, uuidPvzID)
+        if err != nil </span><span class="cov8" title="1">{
+                logger.WithError(err).Error("failed to create reception")
+                return nil, err
+        }</span>
+
+        <span class="cov8" title="1">return reception, nil</span>
 }
 
 func (uc *ReceptionUsecase) CloseReception(ctx context.Context, pvzID string) (*models.Reception, error) <span class="cov8" title="1">{
-    // Валидация UUID
-    uuidPvzID, err := uuid.Parse(pvzID)
-    if err != nil </span><span class="cov8" title="1">{
-        return nil, fmt.Errorf("invalid pvzId: %w", err)
-    }</span>
+    const op = "ReceptionUsecase.CloseReception"
+        logger := logctx.GetLogger(ctx).WithField("op", op).WithField("pvz_id", pvzID)
 
-    <span class="cov8" title="1">return uc.repo.CloseReception(ctx, uuidPvzID)</span>
+        uuidPvzID, err := uuid.Parse(pvzID)
+        if err != nil </span><span class="cov8" title="1">{
+                logger.WithError(err).Warn("invalid pvzID")
+                return nil, fmt.Errorf("invalid pvzId: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">reception, err := uc.repo.CloseReception(ctx, uuidPvzID)
+        if err != nil </span><span class="cov8" title="1">{
+                logger.WithError(err).Error("failed to close reception")
+                return nil, err
+        }</span>
+
+        <span class="cov8" title="1">return reception, nil</span>
 }</pre>
 		
 		</div>
