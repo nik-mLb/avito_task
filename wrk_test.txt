@@ -5,6 +5,7 @@ TOKEN=$(curl -s -X POST http://localhost:8080/login \
 
         ТЕСТИРУЕМ
 wrk -t10 -c50 -d30s -H "Cookie: token=$TOKEN" "http://localhost:8080/pvz?startDate=2025-01-01T00:00:00Z&endDate=2025-12-31T23:59:59Z&page=1&limit=10"
+
 Running 30s test @ http://localhost:8080/pvz?startDate=2025-01-01T00:00:00Z&endDate=2025-12-31T23:59:59Z&page=1&limit=10
   10 threads and 50 connections
   Thread Stats   Avg      Stdev     Max   +/- Stdev
